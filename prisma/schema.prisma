@@ -1,0 +1,26 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Herb {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  latinName   String
+  category    String
+  image       String
+  description String
+  benefits    String
+  videoUrl    String?
+  createdAt   DateTime @default(now())
+}
