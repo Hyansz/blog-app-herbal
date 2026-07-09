@@ -70,7 +70,8 @@ export default function ArticleComments({ articleId, user }: Props) {
         if (!check.ok) {
             setProfanityModal({
                 open: true,
-                message: check.message,
+                message:
+                    check.message ?? "Komentar mengandung kata tidak pantas.",
             });
 
             return;
