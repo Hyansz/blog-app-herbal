@@ -9,6 +9,7 @@ interface Herb {
     name: string;
     slug: string;
     image: string;
+    description: string;   // ← tambahkan baris ini
 
     category?: {
         name: string;
