@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 import AppLayout from "../../components/AppLayout";
 
-import { herbs } from "@/data/herbs";
+import { prisma } from "@/lib/prisma";
+
+import ArticleComments from "@/app/components/articles/ArticleComments";
 
 interface Props {
     params: Promise<{
@@ -10,21 +13,50 @@ interface Props {
     }>;
 }
 
+async function getUser() {
+    const cookieStore = await cookies();
+
+    const token = cookieStore.get("token")?.value;
+
+    if (!token) return null;
+
+    try {
+        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/me`, {
+            headers: {
+                Cookie: `token=${token}`,
+            },
+
+            cache: "no-store",
+        });
+
+        if (!res.ok) return null;
+
+        return res.json();
+    } catch {
+        return null;
+    }
+}
+
 export default async function HerbalDetailPage({ params }: Props) {
     const { slug } = await params;
 
-    const herb = herbs.find((item) => item.slug === slug);
+    const user = await getUser();
+
+    const herb = await prisma.article.findUnique({
+        where: {
+            slug,
+        },
+        include: {
+            category: true,
+        },
+    });
 
     if (!herb) {
         notFound();
     }
 
     return (
-        <AppLayout
-            backHref={`/${herb.category}`}
-            backLabel="Kembali"
-            activeMenu={`/${herb.category}`}
-        >
+        <AppLayout user={user} backHref="/" backLabel="Kembali" activeMenu="/">
             {/* HERO */}
             <div className="mb-10 rounded-[32px] bg-gradient-to-r from-[#1f4d2e] via-[#2f6b3f] to-[#7dbb43] p-10 text-white shadow-xl">
                 <h1 className="text-5xl font-bold">{herb.name}</h1>
@@ -43,7 +75,7 @@ export default async function HerbalDetailPage({ params }: Props) {
                         <img
                             src={herb.image}
                             alt={herb.name}
-                            className="h-full max-h-[420px] w-full object-cover"
+                            className="h-full max-h-[500px] w-full object-cover"
                         />
                     </div>
 
@@ -67,18 +99,15 @@ export default async function HerbalDetailPage({ params }: Props) {
                                     Nama Latin
                                 </h3>
 
-                                <p>{herb.latinName}</p>
+                                <p>{herb.latinName || "-"}</p>
                             </div>
 
                             <div>
                                 <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                    Kandungan
+                                    Kategori
                                 </h3>
 
-                                <p>
-                                    Kurkumin, antioksidan, vitamin alami, minyak
-                                    atsiri, dan senyawa herbal aktif.
-                                </p>
+                                <p>{herb.category.name}</p>
                             </div>
 
                             <div>
@@ -88,6 +117,14 @@ export default async function HerbalDetailPage({ params }: Props) {
 
                                 <p>{herb.benefits}</p>
                             </div>
+
+                            <div>
+                                <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
+                                    Konten
+                                </h3>
+
+                                <p>{herb.content}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -95,35 +132,34 @@ export default async function HerbalDetailPage({ params }: Props) {
 
             {/* VIDEO */}
             <div className="mt-10 grid gap-8 lg:grid-cols-2">
-                <div className="rounded-[28px] border border-[#dce6dc] bg-white p-5 shadow-sm">
-                    <h2 className="mb-5 text-2xl font-bold text-[#1f4d2e]">
-                        Video Edukasi
-                    </h2>
+                {herb.video1 && (
+                    <div className="rounded-[28px] border border-[#dce6dc] bg-white p-5 shadow-sm">
+                        <h2 className="mb-5 text-2xl font-bold text-[#1f4d2e]">
+                            Video Edukasi
+                        </h2>
 
-                    <div className="overflow-hidden rounded-2xl">
-                        <iframe
-                            className="h-[260px] w-full"
-                            src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                            title="Video 1"
-                            allowFullScreen
-                        />
+                        <video controls className="w-full rounded-2xl">
+                            <source src={herb.video1} />
+                        </video>
                     </div>
-                </div>
+                )}
 
-                <div className="rounded-[28px] border border-[#dce6dc] bg-white p-5 shadow-sm">
-                    <h2 className="mb-5 text-2xl font-bold text-[#1f4d2e]">
-                        Cara Pengolahan
-                    </h2>
+                {herb.video2 && (
+                    <div className="rounded-[28px] border border-[#dce6dc] bg-white p-5 shadow-sm">
+                        <h2 className="mb-5 text-2xl font-bold text-[#1f4d2e]">
+                            Cara Pengolahan
+                        </h2>
 
-                    <div className="overflow-hidden rounded-2xl">
-                        <iframe
-                            className="h-[260px] w-full"
-                            src="https://www.youtube.com/embed/9No-FiEInLA"
-                            title="Video 2"
-                            allowFullScreen
-                        />
+                        <video controls className="w-full rounded-2xl">
+                            <source src={herb.video2} />
+                        </video>
                     </div>
-                </div>
+                )}
+            </div>
+
+            {/* COMMENTS */}
+            <div className="mt-10">
+                <ArticleComments articleId={herb.id} user={user} />
             </div>
         </AppLayout>
     );

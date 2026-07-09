@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,15 +7,111 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Herb {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  latinName   String
-  category    String
-  image       String
+model User {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+
+  role Role @default(USER)
+
+  createdAt DateTime @default(now())
+
+  articles        Article[]
+  forumPosts      ForumPost[]
+  forumComments   ForumComment[]
+  forumLikes      ForumLike[]
+  articleComments ArticleComment[]
+}
+
+model Category {
+  id String @id @default(cuid())
+
+  name String
+  slug String @unique
+
+  articles Article[]
+
+  createdAt DateTime @default(now())
+}
+
+model Article {
+  id String @id @default(cuid())
+
+  name String
+  slug String @unique
+
+  latinName String?
+
+  image String
+
   description String
   benefits    String
-  videoUrl    String?
-  createdAt   DateTime @default(now())
+  content     String
+
+  video1 String?
+  video2 String?
+
+  createdAt DateTime @default(now())
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  authorId        String
+  author          User             @relation(fields: [authorId], references: [id])
+  comments ArticleComment[]
+}
+
+model ForumPost {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  comments ForumComment[]
+  likes    ForumLike[]
+}
+
+model ForumComment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  postId String
+  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model ForumLike {
+  id String @id @default(cuid())
+
+  postId String
+  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model ArticleComment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  USER
 }
