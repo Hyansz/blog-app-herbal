@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
 interface TokenPayload {
-    id?: string;
+    id: string;
     name: string;
     role: string;
 }
