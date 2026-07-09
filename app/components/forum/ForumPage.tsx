@@ -91,7 +91,8 @@ export default function ForumPage({ user }: Props) {
         if (!check.ok) {
             setProfanityModal({
                 open: true,
-                message: check.message,
+                message:
+                    check.message ?? "Konten mengandung kata tidak pantas.",
             });
 
             return;
@@ -156,7 +157,8 @@ export default function ForumPage({ user }: Props) {
         if (!check.ok) {
             setProfanityModal({
                 open: true,
-                message: check.message,
+                message:
+                    check.message ?? "Konten mengandung kata tidak pantas.",
             });
 
             return;
