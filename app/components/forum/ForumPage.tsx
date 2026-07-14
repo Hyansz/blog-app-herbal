@@ -42,6 +42,31 @@ export default function ForumPage({ user }: Props) {
         open: false,
         message: "",
     });
+    const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+    const [deleteModal, setDeleteModal] = useState<string | null>(null);
+
+    useEffect(() => {
+        function handleClickOutside() {
+            setDropdownOpen(null);
+        }
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
+
+    async function handleDelete(postId: string) {
+        setDeleteModal(null);
+        setDropdownOpen(null);
+        try {
+            const res = await fetch(`/api/forum/${postId}`, {
+                method: "DELETE",
+            });
+            if (res.ok) {
+                setPosts((prev) => prev.filter((p) => p.id !== postId));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     async function loadPosts() {
         try {
@@ -418,9 +443,38 @@ export default function ForumPage({ user }: Props) {
                                             </div>
                                         </div>
 
-                                        <button className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f7faf4] transition hover:bg-[#eef6ec]">
-                                            <FiMoreHorizontal className="text-lg text-[#5f6f61]" />
-                                        </button>
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDropdownOpen(
+                                                        dropdownOpen === post.id
+                                                            ? null
+                                                            : post.id,
+                                                    );
+                                                }}
+                                                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f7faf4] transition hover:bg-[#eef6ec]"
+                                            >
+                                                <FiMoreHorizontal className="text-lg text-[#5f6f61]" />
+                                            </button>
+
+                                            {dropdownOpen === post.id &&
+                                                user?.role === "ADMIN" && (
+                                                    <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-[#e4ebe1] bg-white shadow-2xl">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDeleteModal(
+                                                                    post.id,
+                                                                );
+                                                            }}
+                                                            className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                                        >
+                                                            Hapus
+                                                        </button>
+                                                    </div>
+                                                )}
+                                        </div>
                                     </div>
 
                                     {/* CONTENT */}
@@ -652,6 +706,43 @@ export default function ForumPage({ user }: Props) {
                     })
                 }
             />
+
+            {deleteModal && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-5 backdrop-blur-md">
+                    <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-[#e4ebe1] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.35)]">
+                        <div className="bg-gradient-to-r from-[#17351f] to-[#245434] px-8 py-6">
+                            <h3 className="text-2xl font-black text-white">
+                                Hapus Diskusi
+                            </h3>
+                        </div>
+
+                        <div className="p-8">
+                            <p className="text-[15px] leading-relaxed text-[#33443a]">
+                                Apakah yakin menghapus diskusi ini?
+                            </p>
+
+                            <div className="mt-8 flex gap-4">
+                                <button
+                                    onClick={() => {
+                                        setDeleteModal(null);
+                                        setDropdownOpen(null);
+                                    }}
+                                    className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
+                                >
+                                    Batal
+                                </button>
+
+                                <button
+                                    onClick={() => handleDelete(deleteModal)}
+                                    className="flex-1 rounded-2xl bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700"
+                                >
+                                    Hapus
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
