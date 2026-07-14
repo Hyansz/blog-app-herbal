@@ -45,14 +45,6 @@ export default function ForumPage({ user }: Props) {
     const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
     const [deleteModal, setDeleteModal] = useState<string | null>(null);
 
-    useEffect(() => {
-        function handleClickOutside() {
-            setDropdownOpen(null);
-        }
-        document.addEventListener("click", handleClickOutside);
-        return () => document.removeEventListener("click", handleClickOutside);
-    }, []);
-
     async function handleDelete(postId: string) {
         setDeleteModal(null);
         setDropdownOpen(null);
@@ -445,14 +437,13 @@ export default function ForumPage({ user }: Props) {
 
                                         <div className="relative">
                                             <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
+                                                onClick={() =>
                                                     setDropdownOpen(
                                                         dropdownOpen === post.id
                                                             ? null
                                                             : post.id,
-                                                    );
-                                                }}
+                                                    )
+                                                }
                                                 className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f7faf4] transition hover:bg-[#eef6ec]"
                                             >
                                                 <FiMoreHorizontal className="text-lg text-[#5f6f61]" />
@@ -460,19 +451,28 @@ export default function ForumPage({ user }: Props) {
 
                                             {dropdownOpen === post.id &&
                                                 user?.role === "ADMIN" && (
-                                                    <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-[#e4ebe1] bg-white shadow-2xl">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setDeleteModal(
-                                                                    post.id,
-                                                                );
-                                                            }}
-                                                            className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                                                        >
-                                                            Hapus
-                                                        </button>
-                                                    </div>
+                                                    <>
+                                                        <div
+                                                            className="fixed inset-0 z-40"
+                                                            onClick={() =>
+                                                                setDropdownOpen(
+                                                                    null,
+                                                                )
+                                                            }
+                                                        />
+                                                        <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-[#e4ebe1] bg-white shadow-2xl">
+                                                            <button
+                                                                onClick={() =>
+                                                                    setDeleteModal(
+                                                                        post.id,
+                                                                    )
+                                                                }
+                                                                className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                                            >
+                                                                Hapus
+                                                            </button>
+                                                        </div>
+                                                    </>
                                                 )}
                                         </div>
                                     </div>
