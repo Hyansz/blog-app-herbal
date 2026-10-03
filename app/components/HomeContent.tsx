@@ -26,11 +26,7 @@ export default function HomeContent({ herbs }: Props) {
 
     return (
         <>
-            <HeroBanner
-                eyebrow="Selamat Datang di"
-                title="Jamoe Djawa"
-                subtitle="Warisan Leluhur Nusantara untuk kesehatan alami dan edukasi herbal tradisional Indonesia."
-            />
+            <HeroBanner />
 
             <HerbList
                 herbs={herbs}

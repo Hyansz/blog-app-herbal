@@ -1,27 +1,24 @@
-interface Props {
-    eyebrow: string;
+import { FiFeather } from "react-icons/fi";
 
-    title: string;
-
-    subtitle: string;
-}
-
-export default function HeroBanner({ eyebrow, title, subtitle }: Props) {
+export default function HeroBanner() {
     return (
-        <div className="relative mb-8 overflow-hidden rounded-3xl border border-[#31543d] bg-gradient-to-br from-[#17351f] via-[#1f4d2e] to-[#7dbb43] p-6 text-white shadow-[0_20px_60px_rgba(16,40,23,0.25)] lg:p-8">
-            <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-[#dff0d2]/10 blur-3xl" />
+        <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-r from-[#17351f] via-[#1f4d2e] to-[#7dbb43] px-5 py-3 text-white shadow-[0_10px_30px_rgba(16,40,23,0.2)]">
+            <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/15">
+                    <FiFeather className="text-[18px]" />
+                </div>
 
-            <div className="relative z-10 max-w-3xl">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#dff0d2] sm:text-sm">
-                    {eyebrow}
-                </p>
+                <p className="min-w-0 flex-1 truncate text-sm">
+                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-[#dff0d2]">
+                        Selamat Datang di
+                    </span>
 
-                <h1 className="text-3xl font-black leading-tight lg:text-4xl">
-                    {title}
-                </h1>
+                    <span className="ml-2 font-bold">Jamoe Djawa</span>
 
-                <p className="mt-3 text-base leading-relaxed text-[#eef7e8]">
-                    {subtitle}
+                    <span className="ml-2 hidden text-[#eef7e8] lg:inline">
+                        — Warisan Leluhur Nusantara untuk kesehatan alami dan
+                        edukasi herbal tradisional Indonesia.
+                    </span>
                 </p>
             </div>
         </div>

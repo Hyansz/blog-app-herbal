@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import HeroBanner from "./HeroBanner";
 import HerbList from "./HerbList";
 
 interface Props {
@@ -28,16 +27,10 @@ export default function CategoryContent({ title, herbs }: Props) {
 
     return (
         <>
-            <HeroBanner
-                eyebrow="Kategori Herbal Nusantara"
-                title={title}
-                subtitle="Jelajahi kekayaan tanaman herbal tradisional Indonesia yang telah diwariskan turun-temurun sebagai bahan jamu, pengobatan alami, dan penjaga kesehatan tubuh."
-            />
-
             <HerbList
                 herbs={herbs}
                 search={search}
-                title={`Koleksi ${title}`}
+                title={title}
                 description={`Temukan berbagai tanaman herbal ${title.toLowerCase()} pilihan khas nusantara.`}
                 emptyTitle={`${title} Herbal Tidak Ditemukan`}
                 emptyDescription={`Coba gunakan kata kunci lain untuk mencari herbal ${title.toLowerCase()}.`}
