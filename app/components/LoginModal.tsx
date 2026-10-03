@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff, X } from "lucide-react";
 
+import LoadingButton from "./LoadingButton";
+
 interface Props {
     onClose: () => void;
     onOpenRegister: () => void;
@@ -36,6 +38,8 @@ export default function LoginModal({ onClose, onOpenRegister }: Props) {
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
 
+        if (loading) return;
+
         setLoading(true);
 
         try {
@@ -67,9 +71,9 @@ export default function LoginModal({ onClose, onOpenRegister }: Props) {
             }
         } catch {
             alert("Terjadi kesalahan");
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }
 
     return (
@@ -120,12 +124,14 @@ export default function LoginModal({ onClose, onOpenRegister }: Props) {
                     </button>
                 </div>
 
-                <button
-                    disabled={loading}
+                <LoadingButton
+                    type="submit"
+                    loading={loading}
+                    loadingText="Masuk..."
                     className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white"
                 >
-                    {loading ? "Loading..." : "Masuk"}
-                </button>
+                    Masuk
+                </LoadingButton>
 
                 <div className="text-center">
                     <p className="text-sm text-[#5f6f61]">Belum punya akun?</p>

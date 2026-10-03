@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, X } from "lucide-react";
 
+import LoadingButton from "./LoadingButton";
+
 interface Props {
     onClose: () => void;
     onOpenLogin: () => void;
@@ -22,6 +24,8 @@ export default function RegisterModal({ onClose, onOpenLogin }: Props) {
 
     async function handleRegister(e: React.FormEvent) {
         e.preventDefault();
+
+        if (loading) return;
 
         setLoading(true);
 
@@ -45,9 +49,9 @@ export default function RegisterModal({ onClose, onOpenLogin }: Props) {
             }
         } catch {
             alert("Terjadi kesalahan");
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }
 
     return (
@@ -107,13 +111,14 @@ export default function RegisterModal({ onClose, onOpenLogin }: Props) {
                         </button>
                     </div>
 
-                    <button className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#163924]">
-                        {loading ? (
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        ) : (
-                            "Daftar"
-                        )}
-                    </button>
+                    <LoadingButton
+                        type="submit"
+                        loading={loading}
+                        loadingText="Mendaftarkan..."
+                        className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#163924]"
+                    >
+                        Daftar
+                    </LoadingButton>
 
                     <div className="text-center">
                         <p className="text-sm text-[#5f6f61]">

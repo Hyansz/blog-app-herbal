@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { FiEdit2, FiPlus, FiTrash2, FiX } from "react-icons/fi";
 
+import LoadingButton from "@/app/components/LoadingButton";
+
 interface Props {
     categories: any[];
 }
@@ -23,6 +25,8 @@ export default function CategoriesContent({
     const [showEditModal, setShowEditModal] = useState(false);
 
     const [loading, setLoading] = useState(false);
+
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const [selectedCategory, setSelectedCategory] = useState<any>(null);
 
@@ -45,78 +49,99 @@ export default function CategoriesContent({
     async function handleCreate() {
         if (!name.trim()) return;
 
+        if (loading) return;
+
         setLoading(true);
 
-        const res = await fetch("/api/categories", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                name,
-            }),
-        });
+        try {
+            const res = await fetch("/api/categories", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name,
+                }),
+            });
 
-        const data = await res.json();
+            const data = await res.json();
 
-        setLoading(false);
+            if (res.ok) {
+                setCategories((prev: any) => [data, ...prev]);
 
-        if (res.ok) {
-            setCategories((prev: any) => [data, ...prev]);
+                setShowCreateModal(false);
 
-            setShowCreateModal(false);
-
-            setName("");
+                setName("");
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
     async function handleEdit() {
         if (!selectedCategory) return;
 
+        if (loading) return;
+
         setLoading(true);
 
-        const res = await fetch(`/api/categories/${selectedCategory.id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                name,
-            }),
-        });
-
-        const data = await res.json();
-
-        setLoading(false);
-
-        if (res.ok) {
-            setCategories((prev: any) =>
-                prev.map((item: any) =>
-                    item.id === selectedCategory.id ? data : item,
-                ),
+        try {
+            const res = await fetch(
+                `/api/categories/${selectedCategory.id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        name,
+                    }),
+                },
             );
 
-            setShowEditModal(false);
+            const data = await res.json();
 
-            setSelectedCategory(null);
+            if (res.ok) {
+                setCategories((prev: any) =>
+                    prev.map((item: any) =>
+                        item.id === selectedCategory.id ? data : item,
+                    ),
+                );
 
-            setName("");
+                setShowEditModal(false);
+
+                setSelectedCategory(null);
+
+                setName("");
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
     async function handleDelete(id: string) {
+        if (deletingId) return;
+
         const confirmDelete = confirm("Hapus kategori ini?");
 
         if (!confirmDelete) return;
 
-        const res = await fetch(`/api/categories/${id}`, {
-            method: "DELETE",
-        });
+        setDeletingId(id);
 
-        if (res.ok) {
-            setCategories((prev: any) =>
-                prev.filter((item: any) => item.id !== id),
-            );
+        try {
+            const res = await fetch(`/api/categories/${id}`, {
+                method: "DELETE",
+            });
+
+            if (res.ok) {
+                setCategories((prev: any) =>
+                    prev.filter((item: any) => item.id !== id),
+                );
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDeletingId(null);
         }
     }
 
@@ -264,15 +289,20 @@ export default function CategoriesContent({
                                                     Edit
                                                 </button>
 
-                                                <button
+                                                <LoadingButton
                                                     onClick={() =>
                                                         handleDelete(item.id)
                                                     }
+                                                    loading={
+                                                        deletingId ===
+                                                        item.id
+                                                    }
+                                                    loadingText="Menghapus..."
                                                     className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 text-sm font-semibold text-white"
                                                 >
                                                     <FiTrash2 />
                                                     Hapus
-                                                </button>
+                                                </LoadingButton>
                                             </div>
                                         </td>
                                     </tr>
@@ -308,13 +338,14 @@ export default function CategoriesContent({
                             className="mb-6 w-full rounded-2xl border border-[#dce6dc] px-5 py-4 outline-none focus:border-[#7dbb43]"
                         />
 
-                        <button
+                        <LoadingButton
                             onClick={handleCreate}
-                            disabled={loading}
+                            loading={loading}
+                            loadingText="Menyimpan..."
                             className="w-full rounded-2xl bg-[#1f4d2e] px-5 py-4 font-bold text-white"
                         >
-                            {loading ? "Loading..." : "Tambah Kategori"}
-                        </button>
+                            Tambah Kategori
+                        </LoadingButton>
                     </div>
                 </div>
             )}
@@ -343,13 +374,14 @@ export default function CategoriesContent({
                             className="mb-6 w-full rounded-2xl border border-[#dce6dc] px-5 py-4 outline-none focus:border-[#7dbb43]"
                         />
 
-                        <button
+                        <LoadingButton
                             onClick={handleEdit}
-                            disabled={loading}
+                            loading={loading}
+                            loadingText="Menyimpan..."
                             className="w-full rounded-2xl bg-[#1f4d2e] px-5 py-4 font-bold text-white"
                         >
-                            {loading ? "Loading..." : "Simpan Perubahan"}
-                        </button>
+                            Simpan Perubahan
+                        </LoadingButton>
                     </div>
                 </div>
             )}

@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import LoadingButton from "@/app/components/LoadingButton";
+
 export default function ArticlesContent() {
     const [search, setSearch] = useState("");
 
     const [articles, setArticles] = useState<any[]>([]);
 
     const [loading, setLoading] = useState(true);
+
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
         const handleSearch = (e: any) => {
@@ -39,15 +43,27 @@ export default function ArticlesContent() {
     }, [articles, search]);
 
     async function handleDelete(id: string) {
+        if (deletingId) return;
+
         const confirmDelete = confirm("Hapus artikel?");
 
         if (!confirmDelete) return;
 
-        await fetch(`/api/articles/${id}`, {
-            method: "DELETE",
-        });
+        setDeletingId(id);
 
-        setArticles((prev) => prev.filter((article) => article.id !== id));
+        try {
+            await fetch(`/api/articles/${id}`, {
+                method: "DELETE",
+            });
+
+            setArticles((prev) =>
+                prev.filter((article) => article.id !== id),
+            );
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDeletingId(null);
+        }
     }
 
     return (
@@ -157,12 +173,16 @@ export default function ArticlesContent() {
                                         Edit
                                     </Link>
 
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
+                                    <LoadingButton
+                                        onClick={() =>
+                                            handleDelete(item.id)
+                                        }
+                                        loading={deletingId === item.id}
+                                        loadingText="Menghapus..."
                                         className="flex-1 rounded-2xl bg-red-500 py-3 font-semibold text-white"
                                     >
                                         Hapus
-                                    </button>
+                                    </LoadingButton>
                                 </div>
                             </div>
                         </div>

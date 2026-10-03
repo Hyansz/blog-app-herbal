@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import LoginModal from "@/app/components/LoginModal";
 import RegisterModal from "@/app/components/RegisterModal";
+import LoadingButton from "@/app/components/LoadingButton";
 import { validateProfanity } from "@/lib/profanity";
 import ProfanityModal from "@/app/components/ProfanityModal";
 import {
@@ -44,19 +45,30 @@ export default function ForumPage({ user }: Props) {
     });
     const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
     const [deleteModal, setDeleteModal] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [likingId, setLikingId] = useState<string | null>(null);
+    const [commentingId, setCommentingId] = useState<string | null>(null);
 
     async function handleDelete(postId: string) {
-        setDeleteModal(null);
+        if (deletingId) return;
+
+        setDeletingId(postId);
+
         setDropdownOpen(null);
+
         try {
             const res = await fetch(`/api/forum/${postId}`, {
                 method: "DELETE",
             });
             if (res.ok) {
                 setPosts((prev) => prev.filter((p) => p.id !== postId));
+
+                setDeleteModal(null);
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            setDeletingId(null);
         }
     }
 
@@ -94,6 +106,8 @@ export default function ForumPage({ user }: Props) {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+
+        if (loading) return;
 
         if (!isLoggedIn) {
             setShowLoginModal(true);
@@ -135,9 +149,9 @@ export default function ForumPage({ user }: Props) {
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }
 
     async function handleLike(postId: string) {
@@ -147,6 +161,10 @@ export default function ForumPage({ user }: Props) {
             return;
         }
 
+        if (likingId) return;
+
+        setLikingId(postId);
+
         try {
             await fetch(`/api/forum/${postId}/like`, {
                 method: "POST",
@@ -155,6 +173,8 @@ export default function ForumPage({ user }: Props) {
             loadPosts();
         } catch (error) {
             console.error(error);
+        } finally {
+            setLikingId(null);
         }
     }
 
@@ -164,6 +184,8 @@ export default function ForumPage({ user }: Props) {
 
             return;
         }
+
+        if (commentingId) return;
 
         const value = commentInputs[postId];
 
@@ -180,6 +202,8 @@ export default function ForumPage({ user }: Props) {
 
             return;
         }
+
+        setCommentingId(postId);
 
         try {
             await fetch(`/api/forum/${postId}/comment`, {
@@ -200,6 +224,8 @@ export default function ForumPage({ user }: Props) {
             loadPosts();
         } catch (error) {
             console.error(error);
+        } finally {
+            setCommentingId(null);
         }
     }
 
@@ -387,15 +413,14 @@ export default function ForumPage({ user }: Props) {
                                 )}
 
                                 <div className="mt-7 flex justify-end">
-                                    <button
+                                    <LoadingButton
                                         type="submit"
-                                        disabled={loading}
+                                        loading={loading}
+                                        loadingText="Mengirim..."
                                         className="rounded-3xl bg-gradient-to-r from-[#17351f] to-[#245434] px-8 py-4 font-bold text-white shadow-xl transition-all duration-300 hover:-translate-y-1"
                                     >
-                                        {loading
-                                            ? "Mengirim..."
-                                            : "Posting Diskusi"}
-                                    </button>
+                                        Posting Diskusi
+                                    </LoadingButton>
                                 </div>
                             </form>
                         </section>
@@ -486,8 +511,12 @@ export default function ForumPage({ user }: Props) {
 
                                     {/* ACTION */}
                                     <div className="flex items-center gap-6 border-t border-[#edf2eb] px-8 py-5">
-                                        <button
-                                            onClick={() => handleLike(post.id)}
+                                        <LoadingButton
+                                            onClick={() =>
+                                                handleLike(post.id)
+                                            }
+                                            loading={likingId === post.id}
+                                            loadingText={null}
                                             className="group flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[#f7faf4]"
                                         >
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4f7f1] transition group-hover:bg-[#e9f4e3]">
@@ -503,7 +532,7 @@ export default function ForumPage({ user }: Props) {
                                                     Likes
                                                 </p>
                                             </div>
-                                        </button>
+                                        </LoadingButton>
 
                                         <div className="flex items-center gap-3 rounded-2xl px-3 py-2">
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4f7f1]">
@@ -589,14 +618,19 @@ export default function ForumPage({ user }: Props) {
                                                 className="h-14 flex-1 rounded-2xl border border-[#dce6dc] bg-white px-5 text-[15px] outline-none transition focus:border-[#7dbb43]"
                                             />
 
-                                            <button
+                                            <LoadingButton
                                                 onClick={() =>
                                                     handleComment(post.id)
                                                 }
+                                                loading={
+                                                    commentingId === post.id
+                                                }
+                                                loadingText=""
+                                                aria-label="Kirim komentar"
                                                 className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-[#17351f] to-[#245434] text-white shadow-lg transition hover:scale-[1.03]"
                                             >
                                                 <FiSend />
-                                            </button>
+                                            </LoadingButton>
                                         </div>
                                     </div>
                                 </article>
@@ -722,22 +756,24 @@ export default function ForumPage({ user }: Props) {
                             </p>
 
                             <div className="mt-8 flex gap-4">
-                                <button
-                                    onClick={() => {
-                                        setDeleteModal(null);
-                                        setDropdownOpen(null);
-                                    }}
+                                <LoadingButton
+                                    onClick={() =>
+                                        setDeleteModal(null)
+                                    }
+                                    disabled={deletingId === deleteModal}
                                     className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
                                 >
                                     Batal
-                                </button>
+                                </LoadingButton>
 
-                                <button
+                                <LoadingButton
                                     onClick={() => handleDelete(deleteModal)}
+                                    loading={deletingId === deleteModal}
+                                    loadingText="Menghapus..."
                                     className="flex-1 rounded-2xl bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700"
                                 >
                                     Hapus
-                                </button>
+                                </LoadingButton>
                             </div>
                         </div>
                     </div>

@@ -7,6 +7,8 @@ import { FiAlertTriangle, FiLogOut } from "react-icons/fi";
 
 import SearchBar from "./SearchBar";
 
+import LoadingButton from "./LoadingButton";
+
 interface HeaderProps {
     search?: string;
 
@@ -39,6 +41,8 @@ function HeaderComponent({
 
     const isAdmin = user?.role === "ADMIN";
 
+    const [loggingOut, setLoggingOut] = useState(false);
+
     const logoutText = useMemo(() => {
         if (isAdmin) {
             return {
@@ -66,6 +70,10 @@ function HeaderComponent({
     }, [isAdmin]);
 
     const handleLogout = useCallback(async () => {
+        if (loggingOut) return;
+
+        setLoggingOut(true);
+
         try {
             const res = await fetch("/api/auth/logout", {
                 method: "POST",
@@ -88,8 +96,10 @@ function HeaderComponent({
             console.error(error);
 
             alert("Gagal logout");
+
+            setLoggingOut(false);
         }
-    }, []);
+    }, [loggingOut]);
 
     return (
         <>
@@ -198,21 +208,24 @@ function HeaderComponent({
                         </p>
 
                         <div className="mt-8 flex gap-3">
-                            <button
+<button
                                 type="button"
                                 onClick={() => setShowLogoutModal(false)}
-                                className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#1f4d2e] transition hover:bg-[#f7faf4]"
+                                disabled={loggingOut}
+                                className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
                             >
                                 Batal
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                className="flex-1 rounded-2xl bg-gradient-to-r from-[#d64545] to-[#b63b3b] py-3 font-semibold text-white shadow-lg transition hover:opacity-90"
-                            >
-                                {logoutText.button}
-                            </button>
+                                <LoadingButton
+                                    type="button"
+                                    loading={loggingOut}
+                                    loadingText="Keluar..."
+                                    onClick={handleLogout}
+                                    className="flex items-center justify-center rounded-2xl bg-[#d64545] py-3 font-semibold text-white shadow-lg transition hover:opacity-90"
+                                >
+                                    {logoutText.button}
+                                </LoadingButton>
                         </div>
                     </div>
                 </div>

@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FiArrowLeft, FiEdit3, FiImage, FiVideo } from "react-icons/fi";
 
 import AppLayout from "@/app/components/AppLayout";
+import LoadingButton from "@/app/components/LoadingButton";
 
 export default function EditArticlePage() {
     const router = useRouter();
@@ -70,20 +71,24 @@ export default function EditArticlePage() {
 
         setUploading(true);
 
-        const res = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-        });
+        try {
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
 
-        const data = await res.json();
+            const data = await res.json();
 
-        setUploading(false);
-
-        return data.url;
+            return data.url;
+        } finally {
+            setUploading(false);
+        }
     }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+
+        if (loading || uploading) return;
 
         setLoading(true);
 
@@ -331,6 +336,7 @@ export default function EditArticlePage() {
                             <input
                                 type="file"
                                 accept="image/*"
+                                disabled={uploading || loading}
                                 onChange={async (e) => {
                                     const file = e.target.files?.[0];
 
@@ -346,8 +352,13 @@ export default function EditArticlePage() {
                             />
 
                             {uploading && (
-                                <p className="mt-4 text-sm text-[#5f6f61]">
-                                    Uploading...
+                                <p className="mt-4 flex items-center gap-2 text-sm text-[#5f6f61]">
+                                    <span
+                                        aria-hidden="true"
+                                        className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+                                    />
+
+                                    Mengunggah...
                                 </p>
                             )}
 
@@ -443,6 +454,7 @@ export default function EditArticlePage() {
                                     <input
                                         type="file"
                                         accept="video/*"
+                                        disabled={uploading || loading}
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
 
@@ -481,15 +493,14 @@ export default function EditArticlePage() {
 
                         {/* ACTION */}
                         <div className="flex flex-col gap-4 border-t border-[#e5ece4] pt-8 sm:flex-row">
-                            <button
+                            <LoadingButton
                                 type="submit"
-                                disabled={loading}
+                                loading={loading}
+                                loadingText="Menyimpan..."
                                 className="flex-1 rounded-2xl bg-gradient-to-r from-[#1f4d2e] to-[#2f6b3f] px-8 py-5 text-lg font-bold text-white shadow-lg transition hover:scale-[1.01]"
                             >
-                                {loading
-                                    ? "Menyimpan Perubahan..."
-                                    : "Update Artikel"}
-                            </button>
+                                Update Artikel
+                            </LoadingButton>
 
                             <Link
                                 href="/dashboard/articles"

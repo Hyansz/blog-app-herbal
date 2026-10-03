@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ProfanityModal from "@/app/components/ProfanityModal";
+import LoadingButton from "@/app/components/LoadingButton";
 import { FiClock, FiMessageCircle, FiSend, FiUser } from "react-icons/fi";
 import { Eye, EyeOff } from "lucide-react";
 import { validateProfanity } from "@/lib/profanity";
@@ -57,6 +58,8 @@ export default function ArticleComments({ articleId, user }: Props) {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
+        if (loading) return;
+
         if (!isLoggedIn) {
             setShowLoginModal(true);
 
@@ -79,24 +82,26 @@ export default function ArticleComments({ articleId, user }: Props) {
 
         setLoading(true);
 
-        const res = await fetch(`/api/articles/${articleId}/comments`, {
-            method: "POST",
+        try {
+            const res = await fetch(`/api/articles/${articleId}/comments`, {
+                method: "POST",
 
-            headers: {
-                "Content-Type": "application/json",
-            },
+                headers: {
+                    "Content-Type": "application/json",
+                },
 
-            body: JSON.stringify({
-                content,
-            }),
-        });
+                body: JSON.stringify({
+                    content,
+                }),
+            });
 
-        setLoading(false);
+            if (res.ok) {
+                setContent("");
 
-        if (res.ok) {
-            setContent("");
-
-            loadComments();
+                loadComments();
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -145,15 +150,16 @@ export default function ArticleComments({ articleId, user }: Props) {
                         )}
 
                         <div className="mt-6 flex justify-end">
-                            <button
+                            <LoadingButton
                                 type="submit"
-                                disabled={loading}
+                                loading={loading}
+                                loadingText="Mengirim..."
                                 className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#1f4d2e] to-[#2f6b3f] px-7 py-4 font-semibold text-white shadow-lg transition hover:scale-[1.02]"
                             >
                                 <FiSend />
 
-                                {loading ? "Mengirim..." : "Kirim Komentar"}
-                            </button>
+                                Kirim Komentar
+                            </LoadingButton>
                         </div>
                     </form>
                 </div>
@@ -272,6 +278,8 @@ export default function ArticleComments({ articleId, user }: Props) {
                                     onSubmit={async (e) => {
                                         e.preventDefault();
 
+                                        if (loginLoading) return;
+
                                         setLoginLoading(true);
 
                                         try {
@@ -312,9 +320,9 @@ export default function ArticleComments({ articleId, user }: Props) {
                                             }
                                         } catch {
                                             alert("Terjadi kesalahan");
+                                        } finally {
+                                            setLoginLoading(false);
                                         }
-
-                                        setLoginLoading(false);
                                     }}
                                     className="space-y-5"
                                 >
@@ -358,12 +366,14 @@ export default function ArticleComments({ articleId, user }: Props) {
                                         </button>
                                     </div>
 
-                                    <button
-                                        disabled={loginLoading}
+                                    <LoadingButton
+                                        type="submit"
+                                        loading={loginLoading}
+                                        loadingText="Masuk..."
                                         className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#17351f]"
                                     >
-                                        {loginLoading ? "Loading..." : "Masuk"}
-                                    </button>
+                                        Masuk
+                                    </LoadingButton>
 
                                     <div className="text-center">
                                         <p className="text-sm text-[#5f6f61]">
@@ -397,6 +407,8 @@ export default function ArticleComments({ articleId, user }: Props) {
                                 <form
                                     onSubmit={async (e) => {
                                         e.preventDefault();
+
+                                        if (registerLoading) return;
 
                                         setRegisterLoading(true);
 
@@ -438,9 +450,9 @@ export default function ArticleComments({ articleId, user }: Props) {
                                             }
                                         } catch {
                                             alert("Terjadi kesalahan");
+                                        } finally {
+                                            setRegisterLoading(false);
                                         }
-
-                                        setRegisterLoading(false);
                                     }}
                                     className="space-y-5"
                                 >
@@ -496,14 +508,14 @@ export default function ArticleComments({ articleId, user }: Props) {
                                         </button>
                                     </div>
 
-                                    <button
-                                        disabled={registerLoading}
+                                    <LoadingButton
+                                        type="submit"
+                                        loading={registerLoading}
+                                        loadingText="Mendaftarkan..."
                                         className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#17351f]"
                                     >
-                                        {registerLoading
-                                            ? "Loading..."
-                                            : "Daftar"}
-                                    </button>
+                                        Daftar
+                                    </LoadingButton>
 
                                     <div className="text-center">
                                         <p className="text-sm text-[#5f6f61]">
