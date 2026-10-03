@@ -112,9 +112,9 @@ export default function RegisterModal({ onClose, onOpenLogin }: Props) {
                     </div>
 
                     <LoadingButton
-                        type="submit"
                         loading={loading}
                         loadingText="Mendaftarkan..."
+                        spinnerClassName="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
                         className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#163924]"
                     >
                         Daftar

@@ -336,7 +336,6 @@ export default function EditArticlePage() {
                             <input
                                 type="file"
                                 accept="image/*"
-                                disabled={uploading || loading}
                                 onChange={async (e) => {
                                     const file = e.target.files?.[0];
 
@@ -352,13 +351,8 @@ export default function EditArticlePage() {
                             />
 
                             {uploading && (
-                                <p className="mt-4 flex items-center gap-2 text-sm text-[#5f6f61]">
-                                    <span
-                                        aria-hidden="true"
-                                        className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
-                                    />
-
-                                    Mengunggah...
+                                <p className="mt-4 text-sm text-[#5f6f61]">
+                                    Uploading...
                                 </p>
                             )}
 
@@ -454,7 +448,6 @@ export default function EditArticlePage() {
                                     <input
                                         type="file"
                                         accept="video/*"
-                                        disabled={uploading || loading}
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
 

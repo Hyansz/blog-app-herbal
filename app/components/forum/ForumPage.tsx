@@ -54,6 +54,7 @@ export default function ForumPage({ user }: Props) {
 
         setDeletingId(postId);
 
+        setDeleteModal(null);
         setDropdownOpen(null);
 
         try {
@@ -62,8 +63,6 @@ export default function ForumPage({ user }: Props) {
             });
             if (res.ok) {
                 setPosts((prev) => prev.filter((p) => p.id !== postId));
-
-                setDeleteModal(null);
             }
         } catch (error) {
             console.error(error);
@@ -512,11 +511,10 @@ export default function ForumPage({ user }: Props) {
                                     {/* ACTION */}
                                     <div className="flex items-center gap-6 border-t border-[#edf2eb] px-8 py-5">
                                         <LoadingButton
-                                            onClick={() =>
-                                                handleLike(post.id)
-                                            }
+                                            onClick={() => handleLike(post.id)}
                                             loading={likingId === post.id}
-                                            loadingText={null}
+                                            loadingText=""
+                                            spinnerClassName="h-12 w-12 animate-spin rounded-full border-2 border-[#1f4d2e] border-t-transparent"
                                             className="group flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[#f7faf4]"
                                         >
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4f7f1] transition group-hover:bg-[#e9f4e3]">
@@ -626,7 +624,7 @@ export default function ForumPage({ user }: Props) {
                                                     commentingId === post.id
                                                 }
                                                 loadingText=""
-                                                aria-label="Kirim komentar"
+                                                spinnerClassName="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
                                                 className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-[#17351f] to-[#245434] text-white shadow-lg transition hover:scale-[1.03]"
                                             >
                                                 <FiSend />
@@ -756,15 +754,15 @@ export default function ForumPage({ user }: Props) {
                             </p>
 
                             <div className="mt-8 flex gap-4">
-                                <LoadingButton
-                                    onClick={() =>
-                                        setDeleteModal(null)
-                                    }
-                                    disabled={deletingId === deleteModal}
+                                <button
+                                    onClick={() => {
+                                        setDeleteModal(null);
+                                        setDropdownOpen(null);
+                                    }}
                                     className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
                                 >
                                     Batal
-                                </LoadingButton>
+                                </button>
 
                                 <LoadingButton
                                     onClick={() => handleDelete(deleteModal)}

@@ -367,7 +367,6 @@ export default function ArticleComments({ articleId, user }: Props) {
                                     </div>
 
                                     <LoadingButton
-                                        type="submit"
                                         loading={loginLoading}
                                         loadingText="Masuk..."
                                         className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#17351f]"
@@ -509,7 +508,6 @@ export default function ArticleComments({ articleId, user }: Props) {
                                     </div>
 
                                     <LoadingButton
-                                        type="submit"
                                         loading={registerLoading}
                                         loadingText="Mendaftarkan..."
                                         className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#17351f]"

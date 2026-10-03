@@ -174,9 +174,7 @@ export default function ArticlesContent() {
                                     </Link>
 
                                     <LoadingButton
-                                        onClick={() =>
-                                            handleDelete(item.id)
-                                        }
+                                        onClick={() => handleDelete(item.id)}
                                         loading={deletingId === item.id}
                                         loadingText="Menghapus..."
                                         className="flex-1 rounded-2xl bg-red-500 py-3 font-semibold text-white"

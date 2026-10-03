@@ -208,24 +208,23 @@ function HeaderComponent({
                         </p>
 
                         <div className="mt-8 flex gap-3">
-<button
+                            <button
                                 type="button"
                                 onClick={() => setShowLogoutModal(false)}
-                                disabled={loggingOut}
-                                className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
+                                className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#1f4d2e] transition hover:bg-[#f7faf4]"
                             >
                                 Batal
                             </button>
 
-                                <LoadingButton
-                                    type="button"
-                                    loading={loggingOut}
-                                    loadingText="Keluar..."
-                                    onClick={handleLogout}
-                                    className="flex items-center justify-center rounded-2xl bg-[#d64545] py-3 font-semibold text-white shadow-lg transition hover:opacity-90"
-                                >
-                                    {logoutText.button}
-                                </LoadingButton>
+                            <LoadingButton
+                                type="button"
+                                loading={loggingOut}
+                                loadingText="Keluar..."
+                                onClick={handleLogout}
+                                className="flex-1 rounded-2xl bg-gradient-to-r from-[#d64545] to-[#b63b3b] py-3 font-semibold text-white shadow-lg transition hover:opacity-90"
+                            >
+                                {logoutText.button}
+                            </LoadingButton>
                         </div>
                     </div>
                 </div>

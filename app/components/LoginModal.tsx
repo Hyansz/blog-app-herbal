@@ -125,7 +125,6 @@ export default function LoginModal({ onClose, onOpenRegister }: Props) {
                 </div>
 
                 <LoadingButton
-                    type="submit"
                     loading={loading}
                     loadingText="Masuk..."
                     className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white"
