@@ -4,6 +4,7 @@ import AppLayout from "../../components/AppLayout";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { getCategories } from "@/lib/categories";
 
 import ArticleComments from "@/app/components/articles/ArticleComments";
 
@@ -22,6 +23,8 @@ export default async function HerbalDetailPage({ params }: Props) {
 
     const user = await getUser();
 
+    const categories = await getCategories();
+
     const herb = await prisma.article.findUnique({
         where: {
             slug,
@@ -36,7 +39,13 @@ export default async function HerbalDetailPage({ params }: Props) {
     }
 
     return (
-        <AppLayout user={user} backHref="/" backLabel="Kembali" activeMenu="/">
+        <AppLayout
+            user={user}
+            categories={categories}
+            backHref="/"
+            backLabel="Kembali"
+            activeMenu="/"
+        >
             {/* HERO */}
             <div className="mb-10 rounded-[32px] bg-gradient-to-r from-[#1f4d2e] via-[#2f6b3f] to-[#7dbb43] p-10 text-white shadow-xl">
                 <h1 className="text-5xl font-bold">{herb.name}</h1>
@@ -71,7 +80,9 @@ export default async function HerbalDetailPage({ params }: Props) {
                                     Deskripsi
                                 </h3>
 
-                                <p>{herb.description}</p>
+                                <p className="whitespace-pre-line break-words">
+                                    {herb.description}
+                                </p>
                             </div>
 
                             <div>
@@ -95,7 +106,9 @@ export default async function HerbalDetailPage({ params }: Props) {
                                     Khasiat
                                 </h3>
 
-                                <p>{herb.benefits}</p>
+                                <p className="whitespace-pre-line break-words">
+                                    {herb.benefits}
+                                </p>
                             </div>
 
                             <div>
@@ -103,7 +116,9 @@ export default async function HerbalDetailPage({ params }: Props) {
                                     Konten
                                 </h3>
 
-                                <p>{herb.content}</p>
+                                <p className="whitespace-pre-line break-words">
+                                    {herb.content}
+                                </p>
                             </div>
                         </div>
                     </div>

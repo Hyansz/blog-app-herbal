@@ -9,6 +9,10 @@ interface Params {
 
 /* =========================
    UPDATE CATEGORY
+
+   Slug sengaja TIDAK di-generate ulang.
+   Slug hanya dibuat saat create (POST /api/categories) agar URL
+   kategori dan relasi artikel tidak rusak saat nama diubah.
 ========================= */
 export async function PUT(req: Request, { params }: Params) {
     try {
@@ -22,7 +26,6 @@ export async function PUT(req: Request, { params }: Params) {
             },
             data: {
                 name: body.name,
-                slug: body.name.toLowerCase().replace(/\s+/g, "-"),
             },
         });
 

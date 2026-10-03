@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import {
@@ -18,38 +18,18 @@ import {
     FiX,
 } from "react-icons/fi";
 
-const menus = [
-    {
-        name: "Rimpang",
-        href: "/rimpang",
-        icon: FiFeather,
-    },
-    {
-        name: "Rempah",
-        href: "/rempah",
-        icon: FiGrid,
-    },
-    {
-        name: "Daun",
-        href: "/daun",
-        icon: FiBookOpen,
-    },
-    {
-        name: "Penyakit",
-        href: "/penyakit",
-        icon: FiActivity,
-    },
-    {
-        name: "Informasi",
-        href: "/informasi",
-        icon: FiInfo,
-    },
-    {
-        name: "Tips Sehat",
-        href: "/tips-sehat",
-        icon: FiHeart,
-    },
-];
+import type { IconType } from "react-icons";
+
+const CATEGORY_ICONS: Record<string, IconType> = {
+    rimpang: FiFeather,
+    rempah: FiGrid,
+    daun: FiBookOpen,
+    penyakit: FiActivity,
+    informasi: FiInfo,
+    "tips-sehat": FiHeart,
+};
+
+const DEFAULT_CATEGORY_ICON = FiBookOpen;
 
 const adminMenus = [
     {
@@ -62,6 +42,14 @@ const adminMenus = [
     },
 ];
 
+export interface CategoryMenuItem {
+    id: string;
+
+    name: string;
+
+    slug: string;
+}
+
 interface SidebarProps {
     activeMenu?: string;
 
@@ -69,6 +57,8 @@ interface SidebarProps {
         name: string;
         role: string;
     } | null;
+
+    categories?: CategoryMenuItem[];
 
     mobileOpen?: boolean;
 
@@ -78,6 +68,7 @@ interface SidebarProps {
 function SidebarComponent({
     activeMenu,
     user,
+    categories: categoriesProp,
     mobileOpen,
     onCloseMobile,
 }: SidebarProps) {
@@ -85,9 +76,16 @@ function SidebarComponent({
 
     const isAdmin = user?.role === "ADMIN";
 
+    const [fetchedCategories, setFetchedCategories] = useState<
+        CategoryMenuItem[]
+    >([]);
+
     const [openMenu, setOpenMenu] = useState(true);
 
     const [openAdminMenu, setOpenAdminMenu] = useState(true);
+
+    /* Prioritas: data dari server component, fallback ke fetch client. */
+    const categories = categoriesProp ?? fetchedCategories;
 
     useEffect(() => {
         const savedMain = localStorage.getItem("sidebar-main-menu");
@@ -102,6 +100,35 @@ function SidebarComponent({
             setOpenAdminMenu(savedAdmin === "true");
         }
     }, []);
+
+    useEffect(() => {
+        if (categoriesProp) return;
+
+        let active = true;
+
+        fetch("/api/categories")
+            .then((res) => res.json())
+            .then((data) => {
+                if (active && Array.isArray(data)) {
+                    setFetchedCategories(data);
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            active = false;
+        };
+    }, [categoriesProp]);
+
+    const menus = useMemo(
+        () =>
+            categories.map((category) => ({
+                name: category.name,
+                href: `/${category.slug}`,
+                icon: CATEGORY_ICONS[category.slug] ?? DEFAULT_CATEGORY_ICON,
+            })),
+        [categories],
+    );
 
     function toggleMenu() {
         const next = !openMenu;
@@ -311,13 +338,19 @@ function SidebarComponent({
                     </button>
 
                     <div
-                        className={`overflow-hidden transition-all duration-300 ${
+                        className={`custom-scrollbar overflow-y-auto transition-all duration-300 ${
                             openMenu
-                                ? "max-h-[700px] opacity-100"
+                                ? "max-h-[60vh] opacity-100"
                                 : "max-h-0 opacity-0"
                         }`}
                     >
                         <nav className="flex flex-col gap-2">
+                            {menus.length === 0 && (
+                                <p className="px-4 py-3 text-sm text-[#b9d9a8]/70">
+                                    Belum ada kategori herbal.
+                                </p>
+                            )}
+
                             {menus.map((menu) => {
                                 const isActive =
                                     pathname === menu.href ||

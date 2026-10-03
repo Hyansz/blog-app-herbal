@@ -14,7 +14,7 @@ export default function Footer() {
                     </div>
 
                     <p className="text-sm font-medium text-[#8b6b2e]">
-                        © 2026 Raihan Regita Harjuno
+                        © 2026 Herbalpedia
                     </p>
                 </div>
             </div>

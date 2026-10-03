@@ -6,10 +6,12 @@ import HeroBanner from "./HeroBanner";
 import HerbList from "./HerbList";
 
 interface Props {
+    title: string;
+
     herbs: any[];
 }
 
-export default function HomeContent({ herbs }: Props) {
+export default function CategoryContent({ title, herbs }: Props) {
     const [search, setSearch] = useState("");
 
     useEffect(() => {
@@ -27,16 +29,18 @@ export default function HomeContent({ herbs }: Props) {
     return (
         <>
             <HeroBanner
-                eyebrow="Selamat Datang di"
-                title="Jamoe Djawa"
-                subtitle="Warisan Leluhur Nusantara untuk kesehatan alami dan edukasi herbal tradisional Indonesia."
+                eyebrow="Kategori Herbal Nusantara"
+                title={title}
+                subtitle="Jelajahi kekayaan tanaman herbal tradisional Indonesia yang telah diwariskan turun-temurun sebagai bahan jamu, pengobatan alami, dan penjaga kesehatan tubuh."
             />
 
             <HerbList
                 herbs={herbs}
                 search={search}
-                title="Semua Herbal Nusantara"
-                description="Jelajahi seluruh koleksi herbal tradisional Indonesia."
+                title={`Koleksi ${title}`}
+                description={`Temukan berbagai tanaman herbal ${title.toLowerCase()} pilihan khas nusantara.`}
+                emptyTitle={`${title} Herbal Tidak Ditemukan`}
+                emptyDescription={`Coba gunakan kata kunci lain untuk mencari herbal ${title.toLowerCase()}.`}
             />
         </>
     );

@@ -1,14 +1,11 @@
-import Link from "next/link";
-
 import AppLayout from "@/app/components/AppLayout";
 import CategoriesContent from "./CategoriesContent";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCategories } from "@/lib/categories";
 
-async function getCategories() {
-    return prisma.category.findMany({
-        orderBy: { createdAt: "desc" },
-    });
+async function getSidebarCategories() {
+    return getCategories();
 }
 
 async function getUser() {
@@ -16,12 +13,20 @@ async function getUser() {
 }
 
 export default async function CategoriesPage() {
-    const categories = await getCategories();
+    const categories = await prisma.category.findMany({
+        orderBy: { createdAt: "desc" },
+    });
+
+    const sidebarCategories = await getSidebarCategories();
 
     const user = await getUser();
 
     return (
-        <AppLayout user={user} activeMenu="/dashboard/categories">
+        <AppLayout
+            user={user}
+            categories={sidebarCategories}
+            activeMenu="/dashboard/categories"
+        >
             <CategoriesContent categories={categories} />
         </AppLayout>
     );

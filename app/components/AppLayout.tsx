@@ -6,7 +6,7 @@ import { ReactNode, useEffect, useState } from "react";
 
 import Footer from "./Footer";
 import Header from "./Header";
-import Sidebar from "./Sidebar";
+import Sidebar, { type CategoryMenuItem } from "./Sidebar";
 
 import { FiMenu } from "react-icons/fi";
 
@@ -29,6 +29,8 @@ interface AppLayoutProps {
 
     user?: UserType | null;
 
+    categories?: CategoryMenuItem[];
+
     backHref?: string;
     backLabel?: string;
 
@@ -38,6 +40,7 @@ interface AppLayoutProps {
 export default function AppLayout({
     children,
     user,
+    categories,
     backHref,
     backLabel,
     activeMenu,
@@ -81,7 +84,11 @@ export default function AppLayout({
                 <div className="flex min-h-screen">
                     {/* DESKTOP SIDEBAR */}
                     <div className="hidden lg:block lg:w-[290px] lg:flex-shrink-0">
-                        <Sidebar activeMenu={activeMenu} user={user} />
+                        <Sidebar
+                            activeMenu={activeMenu}
+                            user={user}
+                            categories={categories}
+                        />
                     </div>
 
                     {/* MOBILE SIDEBAR */}
@@ -104,6 +111,7 @@ export default function AppLayout({
                         <Sidebar
                             activeMenu={activeMenu}
                             user={user}
+                            categories={categories}
                             mobileOpen={showSidebar}
                             onCloseMobile={() => setShowSidebar(false)}
                         />

@@ -99,7 +99,11 @@ export default function CreateArticlePage() {
     }
 
     return (
-        <AppLayout user={user} activeMenu="/dashboard/articles">
+        <AppLayout
+            user={user}
+            categories={categories}
+            activeMenu="/dashboard/articles"
+        >
             <div className="space-y-8">
                 {/* HERO */}
                 <div className="relative overflow-hidden rounded-[36px] border border-[#31543d] bg-gradient-to-br from-[#17351f] via-[#1f4d2e] to-[#7dbb43] p-10 text-white shadow-[0_20px_60px_rgba(16,40,23,0.25)]">
