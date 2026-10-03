@@ -54,7 +54,6 @@ export default function ForumPage({ user }: Props) {
 
         setDeletingId(postId);
 
-        setDeleteModal(null);
         setDropdownOpen(null);
 
         try {
@@ -67,6 +66,8 @@ export default function ForumPage({ user }: Props) {
         } catch (error) {
             console.error(error);
         } finally {
+            setDeleteModal(null);
+
             setDeletingId(null);
         }
     }
