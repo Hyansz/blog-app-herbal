@@ -8,7 +8,7 @@ import { validateProfanity } from "@/lib/profanity";
 
 export async function PUT(
     req: Request,
-    { params }: { params: Promise<{ id: string }> },
+    { params }: { params: Promise<{ commentId: string }> },
 ) {
     try {
         const user = await getCurrentUser();
@@ -20,7 +20,7 @@ export async function PUT(
             );
         }
 
-        const { id } = await params;
+        const { commentId } = await params;
 
         const body = await req.json();
 
@@ -28,7 +28,7 @@ export async function PUT(
 
         if (!content?.trim()) {
             return NextResponse.json(
-                { message: "Konten wajib diisi" },
+                { message: "Komentar wajib diisi" },
                 { status: 400 },
             );
         }
@@ -42,9 +42,9 @@ export async function PUT(
             );
         }
 
-        const post = await prisma.forumPost.findUnique({
+        const comment = await prisma.forumComment.findUnique({
             where: {
-                id,
+                id: commentId,
             },
 
             select: {
@@ -53,23 +53,26 @@ export async function PUT(
             },
         });
 
-        if (!post) {
+        if (!comment) {
             return NextResponse.json(
-                { message: "Diskusi tidak ditemukan" },
+                { message: "Komentar tidak ditemukan" },
                 { status: 404 },
             );
         }
 
-        if (user.role !== "ADMIN" && post.authorId !== user.id) {
+        if (user.role !== "ADMIN" && comment.authorId !== user.id) {
             return NextResponse.json(
-                { message: "Kamu tidak memiliki akses untuk mengubah diskusi ini" },
+                {
+                    message:
+                        "Kamu tidak memiliki akses untuk mengubah komentar ini",
+                },
                 { status: 403 },
             );
         }
 
-        const updated = await prisma.forumPost.update({
+        const updated = await prisma.forumComment.update({
             where: {
-                id,
+                id: commentId,
             },
 
             data: {
@@ -82,26 +85,6 @@ export async function PUT(
                         id: true,
                         name: true,
                         role: true,
-                    },
-                },
-                comments: {
-                    include: {
-                        author: {
-                            select: {
-                                id: true,
-                                name: true,
-                                role: true,
-                            },
-                        },
-                    },
-
-                    orderBy: {
-                        createdAt: "asc",
-                    },
-                },
-                likes: {
-                    select: {
-                        id: true,
                     },
                 },
             },
@@ -120,7 +103,7 @@ export async function PUT(
 
 export async function DELETE(
     _req: Request,
-    { params }: { params: Promise<{ id: string }> },
+    { params }: { params: Promise<{ commentId: string }> },
 ) {
     try {
         const user = await getCurrentUser();
@@ -132,11 +115,11 @@ export async function DELETE(
             );
         }
 
-        const { id } = await params;
+        const { commentId } = await params;
 
-        const post = await prisma.forumPost.findUnique({
+        const comment = await prisma.forumComment.findUnique({
             where: {
-                id,
+                id: commentId,
             },
 
             select: {
@@ -145,27 +128,30 @@ export async function DELETE(
             },
         });
 
-        if (!post) {
+        if (!comment) {
             return NextResponse.json(
-                { message: "Diskusi tidak ditemukan" },
+                { message: "Komentar tidak ditemukan" },
                 { status: 404 },
             );
         }
 
-        if (user.role !== "ADMIN" && post.authorId !== user.id) {
+        if (user.role !== "ADMIN" && comment.authorId !== user.id) {
             return NextResponse.json(
-                { message: "Kamu tidak memiliki akses untuk menghapus diskusi ini" },
+                {
+                    message:
+                        "Kamu tidak memiliki akses untuk menghapus komentar ini",
+                },
                 { status: 403 },
             );
         }
 
-        await prisma.forumPost.delete({
+        await prisma.forumComment.delete({
             where: {
-                id,
+                id: commentId,
             },
         });
 
-        return NextResponse.json({ message: "Diskusi berhasil dihapus" });
+        return NextResponse.json({ message: "Komentar berhasil dihapus" });
     } catch (error) {
         console.error(error);
 

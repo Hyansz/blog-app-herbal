@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+
+import { getCurrentUser } from "@/lib/auth";
+
 import { validateProfanity } from "@/lib/profanity";
-import jwt from "jsonwebtoken";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
     const posts = await prisma.forumPost.findMany({
@@ -11,17 +15,33 @@ export async function GET() {
         },
 
         include: {
-            author: true,
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    role: true,
+                },
+            },
             comments: {
                 include: {
-                    author: true,
+                    author: {
+                        select: {
+                            id: true,
+                            name: true,
+                            role: true,
+                        },
+                    },
                 },
 
                 orderBy: {
                     createdAt: "asc",
                 },
             },
-            likes: true,
+            likes: {
+                select: {
+                    id: true,
+                },
+            },
         },
     });
 
@@ -30,11 +50,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const cookieStore = await cookies();
+        const user = await getCurrentUser();
 
-        const token = cookieStore.get("token")?.value;
-
-        if (!token) {
+        if (!user) {
             return NextResponse.json(
                 {
                     message: "Unauthorized",
@@ -45,11 +63,22 @@ export async function POST(req: Request) {
             );
         }
 
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-
         const body = await req.json();
 
-        const check = validateProfanity(body.content);
+        const content = body.content;
+
+        if (!content?.trim()) {
+            return NextResponse.json(
+                {
+                    message: "Konten wajib diisi",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const check = validateProfanity(content);
 
         if (!check.ok) {
             return NextResponse.json(
@@ -64,19 +93,46 @@ export async function POST(req: Request) {
 
         const post = await prisma.forumPost.create({
             data: {
-                content: body.content,
-                authorId: decoded.id,
+                content,
+
+                authorId: user.id,
             },
 
             include: {
-                author: true,
-                comments: true,
-                likes: true,
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        role: true,
+                    },
+                },
+                comments: {
+                    include: {
+                        author: {
+                            select: {
+                                id: true,
+                                name: true,
+                                role: true,
+                            },
+                        },
+                    },
+
+                    orderBy: {
+                        createdAt: "asc",
+                    },
+                },
+                likes: {
+                    select: {
+                        id: true,
+                    },
+                },
             },
         });
 
         return NextResponse.json(post);
     } catch (error) {
+        console.error(error);
+
         return NextResponse.json(
             {
                 message: "Server error",

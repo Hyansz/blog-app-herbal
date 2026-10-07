@@ -2,46 +2,110 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 
-import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/auth";
 
-import jwt from "jsonwebtoken";
+import { validateProfanity } from "@/lib/profanity";
 
 export async function POST(
     req: Request,
     { params }: { params: Promise<{ id: string }> },
 ) {
-    const { id } = await params;
+    try {
+        const user = await getCurrentUser();
 
-    const cookieStore = await cookies();
+        if (!user) {
+            return NextResponse.json(
+                {
+                    message: "Unauthorized",
+                },
+                {
+                    status: 401,
+                },
+            );
+        }
 
-    const token = cookieStore.get("token")?.value;
+        const { id } = await params;
 
-    if (!token) {
+        const body = await req.json();
+
+        const content = body.content;
+
+        if (!content?.trim()) {
+            return NextResponse.json(
+                {
+                    message: "Komentar wajib diisi",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const check = validateProfanity(content);
+
+        if (!check.ok) {
+            return NextResponse.json(
+                {
+                    message: check.message,
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const post = await prisma.forumPost.findUnique({
+            where: {
+                id,
+            },
+
+            select: {
+                id: true,
+            },
+        });
+
+        if (!post) {
+            return NextResponse.json(
+                {
+                    message: "Diskusi tidak ditemukan",
+                },
+                {
+                    status: 404,
+                },
+            );
+        }
+
+        const comment = await prisma.forumComment.create({
+            data: {
+                content,
+
+                postId: id,
+
+                authorId: user.id,
+            },
+
+            include: {
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        role: true,
+                    },
+                },
+            },
+        });
+
+        return NextResponse.json(comment);
+    } catch (error) {
+        console.error(error);
+
         return NextResponse.json(
             {
-                message: "Unauthorized",
+                message: "Server error",
             },
             {
-                status: 401,
+                status: 500,
             },
         );
     }
-
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-
-    const body = await req.json();
-
-    const comment = await prisma.forumComment.create({
-        data: {
-            content: body.content,
-            postId: id,
-            authorId: decoded.id,
-        },
-
-        include: {
-            author: true,
-        },
-    });
-
-    return NextResponse.json(comment);
 }

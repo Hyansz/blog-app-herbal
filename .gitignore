@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local session token & temp scripts
+session.txt
+*.tmp.ts
+*.tmp.mjs
+
 # vercel
 .vercel
 

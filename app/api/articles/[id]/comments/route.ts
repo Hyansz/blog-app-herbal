@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { cookies } from "next/headers";
-
-import jwt from "jsonwebtoken";
+import { getCurrentUser } from "@/lib/auth";
 
 import { prisma } from "@/lib/prisma";
-
-interface TokenPayload {
-    id: string;
-    role: string;
-}
 
 export async function GET(
     req: NextRequest,
@@ -66,11 +59,9 @@ export async function POST(
     },
 ) {
     try {
-        const cookieStore = await cookies();
+        const user = await getCurrentUser();
 
-        const token = cookieStore.get("token")?.value;
-
-        if (!token) {
+        if (!user) {
             return NextResponse.json(
                 {
                     message: "Unauthorized",
@@ -81,10 +72,7 @@ export async function POST(
             );
         }
 
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET!,
-        ) as TokenPayload;
+        const { id } = await context.params;
 
         const body = await req.json();
 
@@ -101,15 +89,14 @@ export async function POST(
             );
         }
 
-        const { id } = await context.params;
-
+        /* authorId diambil dari sesi, tidak pernah dari body. */
         const comment = await prisma.articleComment.create({
             data: {
                 content,
 
                 articleId: id,
 
-                authorId: decoded.id,
+                authorId: user.id,
             },
 
             include: {

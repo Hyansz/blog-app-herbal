@@ -1,16 +1,67 @@
+import "dotenv/config";
+
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+/* Gagal cepat dengan pesan jelas, tanpa stack trace. */
+function fail(message: string): never {
+    console.error("");
+    console.error("❌ Seed dihentikan.");
+    console.error(`   ${message}`);
+    console.error("");
+    process.exit(1);
+}
+
+/* Password seed tidak pernah ditulis di kode maupun di repo.
+   Nilainya wajib datang dari environment variable. */
+function requireSecret(name: string): string {
+    const value = process.env[name];
+
+    if (!value) {
+        fail(
+            `Environment variable ${name} belum diisi. ` +
+                "Isi variabel tersebut di file .env atau di environment " +
+                "lalu jalankan seed ulang.",
+        );
+    }
+
+    return value;
+}
+
+/* Seed boleh menimpa data, jadi di production harus eksplisit diizinkan. */
+function assertSeedAllowed(): void {
+    if (process.env.NODE_ENV !== "production") {
+        return;
+    }
+
+    if (process.env.ALLOW_SEED_PROD !== "true") {
+        fail(
+            "NODE_ENV=production. " +
+                "Seed menolak berjalan agar data produksi tidak tertimpa. " +
+                "Jika tetap diperlukan, jalankan ulang dengan " +
+                "ALLOW_SEED_PROD=true.",
+        );
+    }
+}
+
 async function main() {
+    assertSeedAllowed();
+
+    const adminPassword = await bcrypt.hash(
+        requireSecret("SEED_ADMIN_PASSWORD"),
+        10,
+    );
+
+    const userPassword = await bcrypt.hash(
+        requireSecret("SEED_USER_PASSWORD"),
+        10,
+    );
+
     // =========================
     // USER
     // =========================
-
-    const adminPassword = await bcrypt.hash("admin123", 10);
-
-    const userPassword = await bcrypt.hash("user123", 10);
 
     await prisma.user.upsert({
         where: {

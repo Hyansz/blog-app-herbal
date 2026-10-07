@@ -2,58 +2,90 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 
-import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/auth";
 
-import jwt from "jsonwebtoken";
+export const dynamic = "force-dynamic";
 
 export async function POST(
     req: Request,
     { params }: { params: Promise<{ id: string }> },
 ) {
-    const { id } = await params;
+    try {
+        const user = await getCurrentUser();
 
-    const cookieStore = await cookies();
+        if (!user) {
+            return NextResponse.json(
+                {
+                    message: "Unauthorized",
+                },
+                {
+                    status: 401,
+                },
+            );
+        }
 
-    const token = cookieStore.get("token")?.value;
+        const { id } = await params;
 
-    if (!token) {
-        return NextResponse.json(
-            {
-                message: "Unauthorized",
-            },
-            {
-                status: 401,
-            },
-        );
-    }
-
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-
-    const existing = await prisma.forumLike.findUnique({
-        where: {
-            postId_userId: {
-                postId: id,
-                userId: decoded.id,
-            },
-        },
-    });
-
-    if (existing) {
-        await prisma.forumLike.delete({
+        const post = await prisma.forumPost.findUnique({
             where: {
-                id: existing.id,
+                id,
+            },
+
+            select: {
+                id: true,
             },
         });
 
-        return NextResponse.json({ liked: false });
+        if (!post) {
+            return NextResponse.json(
+                {
+                    message: "Diskusi tidak ditemukan",
+                },
+                {
+                    status: 404,
+                },
+            );
+        }
+
+        const existing = await prisma.forumLike.findUnique({
+            where: {
+                postId_userId: {
+                    postId: id,
+
+                    userId: user.id,
+                },
+            },
+        });
+
+        if (existing) {
+            await prisma.forumLike.delete({
+                where: {
+                    id: existing.id,
+                },
+            });
+
+            return NextResponse.json({ liked: false });
+        }
+
+        await prisma.forumLike.create({
+            data: {
+                postId: id,
+
+                userId: user.id,
+            },
+        });
+
+        return NextResponse.json({ liked: true });
+    } catch (error) {
+        console.error(error);
+
+        return NextResponse.json(
+            {
+                message: "Server error",
+            },
+            {
+                status: 500,
+            },
+        );
     }
-
-    await prisma.forumLike.create({
-        data: {
-            postId: id,
-            userId: decoded.id,
-        },
-    });
-
-    return NextResponse.json({ liked: true });
 }

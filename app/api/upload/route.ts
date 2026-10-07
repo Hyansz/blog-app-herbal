@@ -1,8 +1,33 @@
 import cloudinary from "@/lib/cloudinary";
+import { getCurrentUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     try {
+        const user = await getCurrentUser();
+
+        if (!user) {
+            return NextResponse.json(
+                {
+                    message: "Unauthorized",
+                },
+                {
+                    status: 401,
+                },
+            );
+        }
+
+        if (user.role !== "ADMIN") {
+            return NextResponse.json(
+                {
+                    message: "Forbidden",
+                },
+                {
+                    status: 403,
+                },
+            );
+        }
+
         const formData = await req.formData();
 
         const file = formData.get("file") as File;
@@ -27,6 +52,16 @@ export async function POST(req: Request) {
         const result = await cloudinary.uploader.upload(base64, {
             resource_type: "auto",
             folder: "jamoe-djawa",
+
+            /* Kirim format & kualitas terbaik yang didukung browser,
+               bukan file asli. URL hasil sudah memuat transformasi
+               sehingga aman dipakai next/image. */
+            transformation: [
+                {
+                    quality: "auto",
+                    fetch_format: "auto",
+                },
+            ],
         });
 
         return NextResponse.json({

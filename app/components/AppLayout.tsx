@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 
+import Image from "next/image";
+
 import { ReactNode, useEffect, useState } from "react";
 
 import Footer from "./Footer";
@@ -62,12 +64,19 @@ export default function AppLayout({
         };
     }, [showLogin, showRegister, showSidebar]);
 
+    /* Debounce 300ms: HomeContent/CategoryContent memfilter ulang
+       daftar herbal pada setiap event, tanpa ini tiap ketikan
+       memicu re-render + filter penuh. */
     useEffect(() => {
-        window.dispatchEvent(
-            new CustomEvent("global-search", {
-                detail: search,
-            }),
-        );
+        const timer = setTimeout(() => {
+            window.dispatchEvent(
+                new CustomEvent("global-search", {
+                    detail: search,
+                }),
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
     }, [search]);
 
     function closeAllModal() {
@@ -102,7 +111,7 @@ export default function AppLayout({
                         {/* OVERLAY */}
                         <div
                             onClick={() => setShowSidebar(false)}
-                            className={`absolute inset-0 bg-black/30 backdrop-blur-xl transition-all duration-500 ${
+                            className={`absolute inset-0 cursor-pointer bg-black/30 backdrop-blur-xl transition-all duration-500 ${
                                 showSidebar ? "opacity-100" : "opacity-0"
                             }`}
                         />
@@ -135,10 +144,12 @@ export default function AppLayout({
                                     <FiMenu className="text-2xl text-[#1f4d2e]" />
                                 </button>
 
-                                <img
+                                <Image
                                     src="/logo-jd.png"
                                     alt="Jamoe Djawa"
-                                    className="h-11 object-contain"
+                                    width={2488}
+                                    height={752}
+                                    className="h-11 w-auto object-contain"
                                 />
                             </div>
                         </div>
@@ -166,7 +177,7 @@ export default function AppLayout({
                 <div className="fixed inset-0 z-[999]">
                     <div
                         onClick={closeAllModal}
-                        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                        className="absolute inset-0 cursor-pointer bg-black/30 backdrop-blur-sm"
                     />
 
                     <div className="relative z-[1000] flex min-h-screen items-center justify-center p-6">
@@ -187,7 +198,7 @@ export default function AppLayout({
                 <div className="fixed inset-0 z-[999]">
                     <div
                         onClick={closeAllModal}
-                        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                        className="absolute inset-0 cursor-pointer bg-black/30 backdrop-blur-sm"
                     />
 
                     <div className="relative z-[1000] flex min-h-screen items-center justify-center p-6">

@@ -16,7 +16,7 @@ interface Props {
 
 export default function HerbCard({ herb }: Props) {
     return (
-        <Link href={`/herbal/${herb.slug}`} prefetch>
+        <Link href={`/herbal/${herb.slug}`}>
             <article className="group overflow-hidden rounded-[32px] border border-[#dce6dc] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-2 hover:border-[#7dbb43] hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)]">
                 {/* IMAGE */}
                 <div className="relative h-60 overflow-hidden bg-[#eef2ea]">

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 
+import Image from "next/image";
+
 import AppLayout from "../../components/AppLayout";
 
 import { prisma } from "@/lib/prisma";
@@ -38,6 +40,10 @@ export default async function HerbalDetailPage({ params }: Props) {
         notFound();
     }
 
+    /* Konten format baru disimpan sebagai HTML tersanitasi.
+       Artikel lama berupa teks biasa. */
+    const isHtmlContent = herb.content.trimStart().startsWith("<");
+
     return (
         <AppLayout
             user={user}
@@ -61,9 +67,12 @@ export default async function HerbalDetailPage({ params }: Props) {
                 <div className="grid gap-10 lg:grid-cols-2">
                     {/* IMAGE */}
                     <div className="overflow-hidden rounded-[28px] bg-[#f5f7f5]">
-                        <img
+                        <Image
                             src={herb.image}
                             alt={herb.name}
+                            width={1280}
+                            height={720}
+                            sizes="(max-width:1024px) 100vw, 50vw"
                             className="h-full max-h-[500px] w-full object-cover"
                         />
                     </div>
@@ -101,25 +110,38 @@ export default async function HerbalDetailPage({ params }: Props) {
                                 <p>{herb.category.name}</p>
                             </div>
 
-                            <div>
-                                <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                    Khasiat
-                                </h3>
+                            {!isHtmlContent && (
+                                <div>
+                                    <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
+                                        Khasiat
+                                    </h3>
 
-                                <p className="whitespace-pre-line break-words">
-                                    {herb.benefits}
-                                </p>
-                            </div>
+                                    <p className="whitespace-pre-line break-words">
+                                        {herb.benefits}
+                                    </p>
+                                </div>
+                            )}
 
-                            <div>
-                                <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                    Konten
-                                </h3>
+                            {isHtmlContent ? (
+                                /* Konten format baru: satu blok HTML,
+                                   sudah disanitasi di server saat simpan. */
+                                <div
+                                    className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-[#1f4d2e] prose-strong:text-[#1f4d2e] prose-a:text-[#2f6b3f] prose-a:underline prose-blockquote:border-l-[#7dbb43] prose-blockquote:text-[#5f6f61] prose-img:rounded-3xl"
+                                    dangerouslySetInnerHTML={{
+                                        __html: herb.content,
+                                    }}
+                                />
+                            ) : (
+                                <div>
+                                    <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
+                                        Konten
+                                    </h3>
 
-                                <p className="whitespace-pre-line break-words">
-                                    {herb.content}
-                                </p>
-                            </div>
+                                    <p className="whitespace-pre-line break-words">
+                                        {herb.content}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

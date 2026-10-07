@@ -32,6 +32,15 @@ export async function POST(req: Request) {
                 email: body.email,
                 password: hashedPassword,
             },
+
+            /* Wajib select eksplisit: tanpa ini objek user utuh
+               (termasuk hash password + email) ikut ter-serialize
+               ke response JSON. */
+            select: {
+                id: true,
+                name: true,
+                role: true,
+            },
         });
 
         return NextResponse.json({

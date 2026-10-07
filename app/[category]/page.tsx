@@ -26,13 +26,24 @@ export default async function CategoryPage({ params }: Props) {
         notFound();
     }
 
+    /* Hanya kirim kolom yang dipakai HerbList/HerbCard. */
     const herbs = await prisma.article.findMany({
         where: {
             categoryId: category.id,
         },
 
-        include: {
-            category: true,
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            description: true,
+
+            category: {
+                select: {
+                    name: true,
+                },
+            },
         },
 
         orderBy: {

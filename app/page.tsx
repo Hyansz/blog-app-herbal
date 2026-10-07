@@ -10,9 +10,22 @@ export default async function HomePage() {
 
     const categories = await getCategories();
 
+    /* Hanya kirim kolom yang dipakai HerbList/HerbCard.
+       Kolom berat (content, benefits, video, latinName) tidak
+       perlu ikut ke payload RSC halaman daftar. */
     const herbs = await prisma.article.findMany({
-        include: {
-            category: true,
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            description: true,
+
+            category: {
+                select: {
+                    name: true,
+                },
+            },
         },
 
         orderBy: {

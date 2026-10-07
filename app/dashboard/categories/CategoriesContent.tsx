@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FiEdit2, FiPlus, FiTrash2, FiX } from "react-icons/fi";
 
 import LoadingButton from "@/app/components/LoadingButton";
+
+import { CATEGORIES_UPDATED_EVENT } from "@/app/hooks/useCategories";
 
 interface Props {
     categories: any[];
@@ -12,6 +15,8 @@ interface Props {
 export default function CategoriesContent({
     categories: initialCategories,
 }: Props) {
+    const router = useRouter();
+
     const [categories, setCategories] = useState(initialCategories);
 
     const [search, setSearch] = useState("");
@@ -46,6 +51,13 @@ export default function CategoriesContent({
         return filteredCategories.slice(start, start + limit);
     }, [filteredCategories, limit, page]);
 
+    /* Kabari Sidebar di tab yang sama, lalu segarkan data server. */
+    function notifyCategoriesUpdated() {
+        window.dispatchEvent(new Event(CATEGORIES_UPDATED_EVENT));
+
+        router.refresh();
+    }
+
     async function handleCreate() {
         if (!name.trim()) return;
 
@@ -72,6 +84,8 @@ export default function CategoriesContent({
                 setShowCreateModal(false);
 
                 setName("");
+
+                notifyCategoriesUpdated();
             }
         } finally {
             setLoading(false);
@@ -113,6 +127,8 @@ export default function CategoriesContent({
                 setSelectedCategory(null);
 
                 setName("");
+
+                notifyCategoriesUpdated();
             }
         } finally {
             setLoading(false);
@@ -137,6 +153,8 @@ export default function CategoriesContent({
                 setCategories((prev: any) =>
                     prev.filter((item: any) => item.id !== id),
                 );
+
+                notifyCategoriesUpdated();
             }
         } catch (error) {
             console.error(error);

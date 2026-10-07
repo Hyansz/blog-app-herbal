@@ -48,6 +48,164 @@ export default function ForumPage({ user }: Props) {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [likingId, setLikingId] = useState<string | null>(null);
     const [commentingId, setCommentingId] = useState<string | null>(null);
+    const [editTarget, setEditTarget] = useState<{
+        kind: "post" | "comment";
+        id: string;
+        content: string;
+    } | null>(null);
+    const [savingId, setSavingId] = useState<string | null>(null);
+    const [deleteCommentId, setDeleteCommentId] = useState<string | null>(
+        null,
+    );
+    const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+        null,
+    );
+
+    const isAdmin = user?.role === "ADMIN";
+
+    function canManage(authorId?: string) {
+        if (!user) return false;
+
+        return isAdmin || authorId === user.id;
+    }
+
+    function openEditPost(post: any) {
+        setDropdownOpen(null);
+
+        setEditTarget({
+            kind: "post",
+            id: post.id,
+            content: post.content,
+        });
+    }
+
+    function openEditComment(comment: any) {
+        setEditTarget({
+            kind: "comment",
+            id: comment.id,
+            content: comment.content,
+        });
+    }
+
+    async function handleSaveEdit() {
+        if (!editTarget || savingId) return;
+
+        const content = editTarget.content;
+
+        if (!content.trim()) return;
+
+        const check = validateProfanity(content);
+
+        if (!check.ok) {
+            setProfanityModal({
+                open: true,
+                message:
+                    check.message ??
+                    "Konten mengandung kata tidak pantas.",
+            });
+
+            return;
+        }
+
+        setSavingId(editTarget.id);
+
+        const isPost = editTarget.kind === "post";
+
+        try {
+            const res = await fetch(
+                isPost
+                    ? `/api/forum/${editTarget.id}`
+                    : `/api/forum/comment/${editTarget.id}`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+
+                    body: JSON.stringify({
+                        content,
+                    }),
+                },
+            );
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+
+                alert(data.message || "Gagal menyimpan perubahan");
+
+                return;
+            }
+
+            if (isPost) {
+                setPosts((prev) =>
+                    prev.map((p) =>
+                        p.id === editTarget.id
+                            ? {
+                                  ...p,
+                                  content,
+                              }
+                            : p,
+                    ),
+                );
+            } else {
+                setPosts((prev) =>
+                    prev.map((p) => ({
+                        ...p,
+                        comments: p.comments.map((c: any) =>
+                            c.id === editTarget.id
+                                ? {
+                                      ...c,
+                                      content,
+                                  }
+                                : c,
+                        ),
+                    })),
+                );
+            }
+
+            setEditTarget(null);
+        } catch (error) {
+            console.error(error);
+
+            alert("Terjadi kesalahan");
+        } finally {
+            setSavingId(null);
+        }
+    }
+
+    async function handleDeleteComment(commentId: string) {
+        if (deletingCommentId) return;
+
+        setDeletingCommentId(commentId);
+
+        try {
+            const res = await fetch(`/api/forum/comment/${commentId}`, {
+                method: "DELETE",
+            });
+
+            if (res.ok) {
+                setPosts((prev) =>
+                    prev.map((p) => ({
+                        ...p,
+                        comments: p.comments.filter(
+                            (c: any) => c.id !== commentId,
+                        ),
+                    })),
+                );
+            } else {
+                const data = await res.json().catch(() => ({}));
+
+                alert(data.message || "Gagal menghapus komentar");
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDeleteCommentId(null);
+
+            setDeletingCommentId(null);
+        }
+    }
 
     async function handleDelete(postId: string) {
         if (deletingId) return;
@@ -475,10 +633,10 @@ export default function ForumPage({ user }: Props) {
                                             </button>
 
                                             {dropdownOpen === post.id &&
-                                                user?.role === "ADMIN" && (
+                                                canManage(post.authorId) && (
                                                     <>
                                                         <div
-                                                            className="fixed inset-0 z-40"
+                                                            className="fixed inset-0 z-40 cursor-pointer"
                                                             onClick={() =>
                                                                 setDropdownOpen(
                                                                     null,
@@ -486,6 +644,17 @@ export default function ForumPage({ user }: Props) {
                                                             }
                                                         />
                                                         <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-[#e4ebe1] bg-white shadow-2xl">
+                                                            <button
+                                                                onClick={() =>
+                                                                    openEditPost(
+                                                                        post,
+                                                                    )
+                                                                }
+                                                                className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-[#1f4d2e] transition hover:bg-[#f7faf4]"
+                                                            >
+                                                                Edit
+                                                            </button>
+
                                                             <button
                                                                 onClick={() =>
                                                                     setDeleteModal(
@@ -514,8 +683,7 @@ export default function ForumPage({ user }: Props) {
                                         <LoadingButton
                                             onClick={() => handleLike(post.id)}
                                             loading={likingId === post.id}
-                                            loadingText=""
-                                            spinnerClassName="h-12 w-12 animate-spin rounded-full border-2 border-[#1f4d2e] border-t-transparent"
+                                            loadingText={null}
                                             className="group flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[#f7faf4]"
                                         >
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4f7f1] transition group-hover:bg-[#e9f4e3]">
@@ -566,7 +734,7 @@ export default function ForumPage({ user }: Props) {
                                                                     .toUpperCase()}
                                                             </div>
 
-                                                            <div>
+                                                            <div className="flex-1">
                                                                 <h4 className="font-bold text-[#17351f]">
                                                                     {
                                                                         comment
@@ -583,6 +751,39 @@ export default function ForumPage({ user }: Props) {
                                                                     )}
                                                                 </p>
                                                             </div>
+
+                                                            {canManage(
+                                                                comment.authorId,
+                                                            ) && (
+                                                                <div className="flex shrink-0 items-center gap-2">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            openEditComment(
+                                                                                comment,
+                                                                            )
+                                                                        }
+                                                                        className="rounded-xl px-3 py-2 text-xs font-semibold text-[#1f4d2e] transition hover:bg-[#f7faf4]"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+
+                                                                    <LoadingButton
+                                                                        onClick={() =>
+                                                                            setDeleteCommentId(
+                                                                                comment.id,
+                                                                            )
+                                                                        }
+                                                                        loading={
+                                                                            deletingCommentId ===
+                                                                            comment.id
+                                                                        }
+                                                                        loadingText="Menghapus..."
+                                                                        className="rounded-xl px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                                                                    >
+                                                                        Hapus
+                                                                    </LoadingButton>
+                                                                </div>
+                                                            )}
                                                         </div>
 
                                                         <p className="text-[15px] leading-[1.9] text-[#33443a]">
@@ -625,7 +826,6 @@ export default function ForumPage({ user }: Props) {
                                                     commentingId === post.id
                                                 }
                                                 loadingText=""
-                                                spinnerClassName="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
                                                 className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-[#17351f] to-[#245434] text-white shadow-lg transition hover:scale-[1.03]"
                                             >
                                                 <FiSend />
@@ -768,6 +968,100 @@ export default function ForumPage({ user }: Props) {
                                 <LoadingButton
                                     onClick={() => handleDelete(deleteModal)}
                                     loading={deletingId === deleteModal}
+                                    loadingText="Menghapus..."
+                                    className="flex-1 rounded-2xl bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700"
+                                >
+                                    Hapus
+                                </LoadingButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {editTarget && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-5 backdrop-blur-md">
+                    <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-[#e4ebe1] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.35)]">
+                        <div className="bg-gradient-to-r from-[#17351f] to-[#245434] px-8 py-6">
+                            <h3 className="text-2xl font-black text-white">
+                                {editTarget.kind === "post"
+                                    ? "Edit Diskusi"
+                                    : "Edit Komentar"}
+                            </h3>
+                        </div>
+
+                        <div className="p-8">
+                            <textarea
+                                value={editTarget.content}
+                                onChange={(e) =>
+                                    setEditTarget({
+                                        ...editTarget,
+                                        content: e.target.value,
+                                    })
+                                }
+                                rows={5}
+                                className="w-full resize-none rounded-2xl border border-[#dce6dc] px-5 py-4 text-[15px] leading-relaxed outline-none transition focus:border-[#7dbb43]"
+                            />
+
+                            <div className="mt-8 flex gap-4">
+                                <button
+                                    onClick={() => setEditTarget(null)}
+                                    disabled={savingId === editTarget.id}
+                                    className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
+                                >
+                                    Batal
+                                </button>
+
+                                <LoadingButton
+                                    onClick={handleSaveEdit}
+                                    loading={savingId === editTarget.id}
+                                    loadingText="Menyimpan..."
+                                    className="flex-1 rounded-2xl bg-[#1f4d2e] py-3 font-semibold text-white transition hover:bg-[#17351f]"
+                                >
+                                    Simpan
+                                </LoadingButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {deleteCommentId && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-5 backdrop-blur-md">
+                    <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-[#e4ebe1] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.35)]">
+                        <div className="bg-gradient-to-r from-[#17351f] to-[#245434] px-8 py-6">
+                            <h3 className="text-2xl font-black text-white">
+                                Hapus Komentar
+                            </h3>
+                        </div>
+
+                        <div className="p-8">
+                            <p className="text-[15px] leading-relaxed text-[#33443a]">
+                                Apakah yakin menghapus komentar ini?
+                            </p>
+
+                            <div className="mt-8 flex gap-4">
+                                <button
+                                    onClick={() =>
+                                        setDeleteCommentId(null)
+                                    }
+                                    disabled={
+                                        deletingCommentId ===
+                                        deleteCommentId
+                                    }
+                                    className="flex-1 rounded-2xl border border-[#dce6dc] bg-white py-3 font-semibold text-[#17351f] transition hover:bg-[#f7faf4]"
+                                >
+                                    Batal
+                                </button>
+
+                                <LoadingButton
+                                    onClick={() =>
+                                        handleDeleteComment(deleteCommentId)
+                                    }
+                                    loading={
+                                        deletingCommentId ===
+                                        deleteCommentId
+                                    }
                                     loadingText="Menghapus..."
                                     className="flex-1 rounded-2xl bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700"
                                 >

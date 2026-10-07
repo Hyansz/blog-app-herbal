@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import LoadingButton from "@/app/components/LoadingButton";
@@ -145,10 +146,12 @@ export default function ArticlesContent() {
                             className="overflow-hidden rounded-[32px] border border-[#dce6dc] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.06)]"
                         >
                             <div className="relative h-56 overflow-hidden">
-                                <img
+                                <Image
                                     src={item.image}
                                     alt={item.name}
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    sizes="(max-width:768px) 100vw, 33vw"
+                                    className="object-cover"
                                 />
                             </div>
 

@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { memo, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+
+import {
+    type CategoryMenuItem,
+    useCategories,
+} from "@/app/hooks/useCategories";
 
 import {
     FiChevronDown,
@@ -42,13 +48,7 @@ const adminMenus = [
     },
 ];
 
-export interface CategoryMenuItem {
-    id: string;
-
-    name: string;
-
-    slug: string;
-}
+export type { CategoryMenuItem };
 
 interface SidebarProps {
     activeMenu?: string;
@@ -76,16 +76,12 @@ function SidebarComponent({
 
     const isAdmin = user?.role === "ADMIN";
 
-    const [fetchedCategories, setFetchedCategories] = useState<
-        CategoryMenuItem[]
-    >([]);
-
     const [openMenu, setOpenMenu] = useState(true);
 
     const [openAdminMenu, setOpenAdminMenu] = useState(true);
 
     /* Prioritas: data dari server component, fallback ke fetch client. */
-    const categories = categoriesProp ?? fetchedCategories;
+    const { categories } = useCategories(categoriesProp);
 
     useEffect(() => {
         const savedMain = localStorage.getItem("sidebar-main-menu");
@@ -100,25 +96,6 @@ function SidebarComponent({
             setOpenAdminMenu(savedAdmin === "true");
         }
     }, []);
-
-    useEffect(() => {
-        if (categoriesProp) return;
-
-        let active = true;
-
-        fetch("/api/categories")
-            .then((res) => res.json())
-            .then((data) => {
-                if (active && Array.isArray(data)) {
-                    setFetchedCategories(data);
-                }
-            })
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, [categoriesProp]);
 
     const menus = useMemo(
         () =>
@@ -206,10 +183,12 @@ function SidebarComponent({
                     {/* LOGO */}
                     <div className="mb-8 hidden lg:block">
                         <div className="relative overflow-hidden rounded-[30px] border border-white/20 bg-gradient-to-br from-[#f7f9f4] to-[#dff0d2] p-5 shadow-2xl">
-                            <img
+                            <Image
                                 src="/logo-jd.png"
                                 alt="Jamoe Djawa"
-                                className="relative z-10 w-full object-contain"
+                                width={2488}
+                                height={752}
+                                className="relative z-10 h-auto w-full object-contain"
                             />
                         </div>
                     </div>

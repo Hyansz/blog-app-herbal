@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiImage, FiVideo } from "react-icons/fi";
 
 import AppLayout from "@/app/components/AppLayout";
 import LoadingButton from "@/app/components/LoadingButton";
+import RichTextEditor from "@/app/components/RichTextEditor";
 
 export default function CreateArticlePage() {
     const router = useRouter();
@@ -23,8 +25,6 @@ export default function CreateArticlePage() {
         name: "",
         latinName: "",
         image: "",
-        description: "",
-        benefits: "",
         content: "",
         video1: "",
         video2: "",
@@ -81,14 +81,18 @@ export default function CreateArticlePage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    ...form,
-                    authorId: user.id,
-                }),
+
+                /* authorId tidak dikirim: server mengambil dari
+                   sesi login. */
+                body: JSON.stringify(form),
             });
 
             if (!res.ok) {
-                throw new Error("Gagal membuat artikel");
+                const data = await res.json().catch(() => null);
+
+                throw new Error(
+                    data?.message || "Gagal membuat artikel",
+                );
             }
 
             router.push("/dashboard/articles");
@@ -97,7 +101,11 @@ export default function CreateArticlePage() {
         } catch (error) {
             console.error(error);
 
-            alert("Terjadi kesalahan");
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Terjadi kesalahan",
+            );
         } finally {
             setLoading(false);
         }
@@ -265,69 +273,32 @@ export default function CreateArticlePage() {
                             )}
 
                             {form.image && (
-                                <img
+                                <Image
                                     src={form.image}
                                     alt="Preview"
+                                    width={1280}
+                                    height={720}
+                                    sizes="(max-width:768px) 100vw, 50vw"
                                     className="mt-6 h-72 w-full rounded-3xl object-cover"
                                 />
                             )}
                         </div>
 
-                        {/* TEXTAREA */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                    Deskripsi
-                                </label>
+                        {/* CONTENT EDITOR */}
+                        <div>
+                            <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
+                                Konten Artikel
+                            </label>
 
-                                <textarea
-                                    placeholder="Tulis deskripsi artikel..."
-                                    value={form.description}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            description: e.target.value,
-                                        })
-                                    }
-                                    className="h-36 w-full rounded-2xl border border-[#dce6dc] bg-[#f9fbf8] p-5 outline-none transition focus:border-[#7dbb43]"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                    Manfaat Herbal
-                                </label>
-
-                                <textarea
-                                    placeholder="Tulis manfaat herbal..."
-                                    value={form.benefits}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            benefits: e.target.value,
-                                        })
-                                    }
-                                    className="h-36 w-full rounded-2xl border border-[#dce6dc] bg-[#f9fbf8] p-5 outline-none transition focus:border-[#7dbb43]"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                    Konten Artikel
-                                </label>
-
-                                <textarea
-                                    placeholder="Tulis isi artikel lengkap..."
-                                    value={form.content}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            content: e.target.value,
-                                        })
-                                    }
-                                    className="h-64 w-full rounded-2xl border border-[#dce6dc] bg-[#f9fbf8] p-5 outline-none transition focus:border-[#7dbb43]"
-                                />
-                            </div>
+                            <RichTextEditor
+                                value={form.content}
+                                onChange={(html) =>
+                                    setForm({
+                                        ...form,
+                                        content: html,
+                                    })
+                                }
+                            />
                         </div>
 
                         {/* VIDEO */}

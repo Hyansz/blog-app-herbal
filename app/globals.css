@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@plugin "@tailwindcss/typography";
+
 :root {
     --background: #f4f7f1;
 
@@ -39,6 +41,24 @@ body {
 
 * {
     box-sizing: border-box;
+}
+
+/* CURSOR */
+
+@layer base {
+    button:not(:disabled),
+    [role="button"],
+    summary,
+    select,
+    input[type="file"],
+    input[type="checkbox"],
+    input[type="radio"] {
+        cursor: pointer;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+    }
 }
 
 /* CUSTOM SCROLLBAR */
@@ -82,4 +102,94 @@ body {
 .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #7dbb43 rgba(255, 255, 255, 0.05);
+}
+
+/* RICH TEXT EDITOR (Tiptap) */
+
+.tiptap {
+    outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+
+    float: left;
+    height: 0;
+    pointer-events: none;
+
+    color: #9aa79b;
+}
+
+.tiptap p {
+    margin: 0.5rem 0;
+}
+
+.tiptap h2 {
+    margin: 1.25rem 0 0.5rem;
+
+    font-size: 1.5rem;
+    font-weight: 700;
+
+    color: #1f4d2e;
+}
+
+.tiptap h3 {
+    margin: 1rem 0 0.5rem;
+
+    font-size: 1.25rem;
+    font-weight: 700;
+
+    color: #1f4d2e;
+}
+
+.tiptap ul,
+.tiptap ol {
+    margin: 0.5rem 0;
+
+    padding-left: 1.5rem;
+}
+
+.tiptap ul {
+    list-style: disc;
+}
+
+.tiptap ol {
+    list-style: decimal;
+}
+
+.tiptap li {
+    margin: 0.25rem 0;
+}
+
+.tiptap blockquote {
+    margin: 0.75rem 0;
+
+    padding-left: 1rem;
+
+    border-left: 3px solid #7dbb43;
+
+    color: #5f6f61;
+}
+
+.tiptap hr {
+    margin: 1rem 0;
+
+    border: none;
+    border-top: 1px solid #dce6dc;
+}
+
+.tiptap a {
+    color: #2f6b3f;
+
+    text-decoration: underline;
+}
+
+.tiptap img {
+    display: block;
+
+    margin: 0.75rem 0;
+
+    max-width: 100%;
+
+    border-radius: 1rem;
 }
