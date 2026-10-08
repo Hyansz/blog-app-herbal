@@ -6,17 +6,11 @@ import RegisterModal from "@/app/components/RegisterModal";
 import LoadingButton from "@/app/components/LoadingButton";
 import DashboardHeader from "@/app/components/DashboardHeader";
 import ConfirmModal from "@/app/components/ConfirmModal";
+import ActionMenu from "@/app/components/ActionMenu";
 import { validateProfanity } from "@/lib/profanity";
 import ProfanityModal from "@/app/components/ProfanityModal";
 import { formatRelativeTime } from "@/lib/time";
-import {
-    FiMessageCircle,
-    FiMoreHorizontal,
-    FiSend,
-    FiEdit2,
-    FiTrash2,
-    FiInfo,
-} from "react-icons/fi";
+import { FiMessageCircle, FiSend, FiInfo } from "react-icons/fi";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
 interface Props {
@@ -135,7 +129,6 @@ export default function ForumPage({ user }: Props) {
 
     const [notice, setNotice] = useState<Notice | null>(null);
 
-    const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
     const [deleteModal, setDeleteModal] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [deleteCommentId, setDeleteCommentId] = useState<string | null>(
@@ -442,7 +435,6 @@ export default function ForumPage({ user }: Props) {
         if (deletingId) return;
 
         setDeletingId(postId);
-        setDropdownOpen(null);
 
         try {
             const res = await fetch(`/api/forum/${postId}`, {
@@ -496,8 +488,6 @@ export default function ForumPage({ user }: Props) {
     }
 
     function openEditPost(post: ApiPost) {
-        setDropdownOpen(null);
-
         setEditTarget({
             kind: "post",
             id: post.id,
@@ -780,72 +770,11 @@ export default function ForumPage({ user }: Props) {
                                         </div>
 
                                         {canManage(post.authorId) && (
-                                            <div className="relative shrink-0">
-                                                <button
-                                                    type="button"
-                                                    aria-label="Menu postingan"
-                                                    aria-expanded={
-                                                        dropdownOpen ===
-                                                        post.id
-                                                    }
-                                                    onClick={() =>
-                                                        setDropdownOpen(
-                                                            dropdownOpen ===
-                                                                post.id
-                                                                ? null
-                                                                : post.id,
-                                                        )
-                                                    }
-                                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7faf4] transition hover:bg-[#eef6ec]"
-                                                >
-                                                    <FiMoreHorizontal className="text-[#5f6f61]" />
-                                                </button>
-
-                                                {dropdownOpen ===
-                                                    post.id && (
-                                                    <>
-                                                        <div
-                                                            className="fixed inset-0 z-40"
-                                                            onClick={() =>
-                                                                setDropdownOpen(
-                                                                    null,
-                                                                )
-                                                            }
-                                                        />
-
-                                                        <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-xl border border-[#e4ebe1] bg-white shadow-xl">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    openEditPost(
-                                                                        post,
-                                                                    )
-                                                                }
-                                                                className="flex h-11 w-full items-center gap-2 px-4 text-left text-sm font-semibold text-[#1f4d2e] transition hover:bg-[#f7faf4]"
-                                                            >
-                                                                <FiEdit2 />
-                                                                Edit
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setDropdownOpen(
-                                                                        null,
-                                                                    );
-                                                                    setDeleteModal(
-                                                                        post.id,
-                                                                    );
-                                                                }}
-                                                                className="flex h-11 w-full items-center gap-2 px-4 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                                                            >
-                                                                <FiTrash2 />
-                                                                Hapus
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
+                                            <ActionMenu
+                                                onEdit={() => openEditPost(post)}
+                                                onDelete={() => setDeleteModal(post.id)}
+                                                label="Menu postingan"
+                                            />
                                         )}
                                     </div>
 
@@ -987,31 +916,20 @@ export default function ForumPage({ user }: Props) {
                                                                     {canManage(
                                                                         comment.authorId,
                                                                     ) && (
-                                                                        <div className="flex shrink-0 gap-1">
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() =>
-                                                                                    openEditComment(
-                                                                                        comment,
-                                                                                    )
-                                                                                }
-                                                                                className="flex h-9 items-center rounded-lg px-2.5 text-xs font-semibold text-[#1f4d2e] transition hover:bg-[#f7faf4]"
-                                                                            >
-                                                                                Edit
-                                                                            </button>
-
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() =>
-                                                                                    setDeleteCommentId(
-                                                                                        comment.id,
-                                                                                    )
-                                                                                }
-                                                                                className="flex h-9 items-center rounded-lg px-2.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                                                                            >
-                                                                                Hapus
-                                                                            </button>
-                                                                        </div>
+                                                                        <ActionMenu
+                                                                            size="sm"
+                                                                            onEdit={() =>
+                                                                                openEditComment(
+                                                                                    comment,
+                                                                                )
+                                                                            }
+                                                                            onDelete={() =>
+                                                                                setDeleteCommentId(
+                                                                                    comment.id,
+                                                                                )
+                                                                            }
+                                                                            label="Menu komentar"
+                                                                        />
                                                                     )}
                                                                 </div>
 
