@@ -1,12 +1,16 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import Image from "next/image";
+
+import { FiArrowLeft, FiChevronRight } from "react-icons/fi";
 
 import AppLayout from "../../components/AppLayout";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { getCategories } from "@/lib/categories";
+import { formatTanggalIndonesia } from "@/lib/time";
 
 import ArticleComments from "@/app/components/articles/ArticleComments";
 
@@ -14,6 +18,65 @@ interface Props {
     params: Promise<{
         slug: string;
     }>;
+}
+
+/* URL apa pun di teks artikel lama (mis. "Referensi : https://...")
+   diubah jadi tautan hanya saat dirender. Data tersimpan tidak
+   disentuh. */
+const URL_PATTERN = /https?:\/\/[^\s<>"']+/g;
+
+function renderTextWithLinks(text: string) {
+    const nodes: React.ReactNode[] = [];
+
+    let cursor = 0;
+    let key = 0;
+    let match: RegExpExecArray | null;
+
+    URL_PATTERN.lastIndex = 0;
+
+    while ((match = URL_PATTERN.exec(text)) !== null) {
+        if (match.index > cursor) {
+            nodes.push(text.slice(cursor, match.index));
+        }
+
+        const raw = match[0];
+
+        /* Tanda baca penutup ("." ",") tidak ikut di dalam href. */
+        const trailing = raw.match(/[.,;:!?)\]]+$/);
+        const url = trailing ? raw.slice(0, -trailing[0].length) : raw;
+        const suffix = trailing ? trailing[0] : "";
+
+        if (url) {
+            nodes.push(
+                <a
+                    key={`link-${key++}`}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-words text-[#2f6b3f] underline underline-offset-2 transition hover:text-[#1f4d2e]"
+                >
+                    {url}
+                </a>,
+            );
+        }
+
+        if (suffix) nodes.push(suffix);
+
+        cursor = match.index + raw.length;
+    }
+
+    if (cursor < text.length) nodes.push(text.slice(cursor));
+
+    return nodes;
+}
+
+/* Judul section untuk artikel format lama: kecil, beraksen hijau. */
+function SectionTitle({ children }: { children: React.ReactNode }) {
+    return (
+        <h2 className="mb-3 inline-block border-b-2 border-[#7dbb43] pb-1.5 text-sm font-bold uppercase tracking-[0.18em] text-[#1f4d2e] sm:text-base">
+            {children}
+        </h2>
+    );
 }
 
 async function getUser() {
@@ -44,139 +107,176 @@ export default async function HerbalDetailPage({ params }: Props) {
        Artikel lama berupa teks biasa. */
     const isHtmlContent = herb.content.trimStart().startsWith("<");
 
+    const videos = [herb.video1, herb.video2].filter(
+        (src): src is string => !!src,
+    );
+
     return (
-        <AppLayout
-            user={user}
-            categories={categories}
-            backHref="/"
-            backLabel="Kembali"
-            activeMenu="/"
-        >
-            {/* HERO */}
-            <div className="mb-10 rounded-[32px] bg-gradient-to-r from-[#1f4d2e] via-[#2f6b3f] to-[#7dbb43] p-10 text-white shadow-xl">
-                <h1 className="text-5xl font-bold">{herb.name}</h1>
+        <AppLayout user={user} categories={categories} activeMenu="/">
+            {/* NAVIGASI TIPIS */}
+            <nav className="mb-5 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                <Link
+                    href="/"
+                    className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#dce6dc] bg-white px-4 text-sm font-semibold text-[#17351f] transition hover:border-[#7dbb43] hover:bg-[#fafcf9]"
+                >
+                    <FiArrowLeft aria-hidden />
+                    Kembali
+                </Link>
 
-                <p className="mt-4 max-w-3xl text-lg text-[#eef7e8]">
-                    Eksplorasi manfaat, kandungan, dan khasiat herbal
-                    tradisional nusantara.
-                </p>
-            </div>
+                <ol className="flex min-w-0 items-center gap-2 text-sm text-[#6f7d72]">
+                    <li className="shrink-0">
+                        <Link
+                            href="/"
+                            className="inline-flex min-h-10 items-center transition hover:text-[#1f4d2e]"
+                        >
+                            Beranda
+                        </Link>
+                    </li>
 
-            {/* DETAIL */}
-            <div className="rounded-[32px] border border-[#dce6dc] bg-white p-8 shadow-sm">
-                <div className="grid gap-10 lg:grid-cols-2">
-                    {/* IMAGE */}
-                    <div className="overflow-hidden rounded-[28px] bg-[#f5f7f5]">
+                    <li aria-hidden className="shrink-0 text-[#b9c6ba]">
+                        <FiChevronRight />
+                    </li>
+
+                    <li className="min-w-0 shrink">
+                        <Link
+                            href={`/${herb.category.slug}`}
+                            className="inline-flex min-h-10 min-w-10 max-w-full items-center truncate transition hover:text-[#1f4d2e]"
+                        >
+                            {herb.category.name}
+                        </Link>
+                    </li>
+
+                    <li aria-hidden className="shrink-0 text-[#b9c6ba]">
+                        <FiChevronRight />
+                    </li>
+
+                    <li className="min-w-0 flex-1">
+                        <span
+                            className="flex min-h-10 items-center truncate font-semibold text-[#1f4d2e]"
+                            title={herb.name}
+                        >
+                            {herb.name}
+                        </span>
+                    </li>
+                </ol>
+            </nav>
+
+            {/* HEADER ARTIKEL */}
+            <header className="mb-6">
+                <h1 className="text-3xl font-extrabold leading-tight text-[#17351f] sm:text-4xl">
+                    {herb.name}
+                </h1>
+
+                {herb.latinName ? (
+                    <p className="mt-2 text-lg italic text-[#5f6f61]">
+                        {herb.latinName}
+                    </p>
+                ) : null}
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <Link
+                        href={`/${herb.category.slug}`}
+                        className="inline-flex h-10 items-center rounded-full border border-[#cfe3cb] bg-[#eef6ec] px-4 text-xs font-bold uppercase tracking-[0.12em] text-[#1f4d2e] transition hover:border-[#7dbb43] hover:bg-[#e4f1dd]"
+                    >
+                        {herb.category.name}
+                    </Link>
+
+                    <span className="text-sm text-[#6f7d72]">
+                        {formatTanggalIndonesia(herb.createdAt)}
+                    </span>
+                </div>
+            </header>
+
+            {/* DUA KOLOM (lg ke atas) */}
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+                {/* GAMBAR */}
+                <div className="self-start lg:sticky lg:top-24">
+                    <div className="relative aspect-video max-h-72 w-full overflow-hidden rounded-2xl border border-[#dce6dc] bg-[#f5f7f5] lg:aspect-[4/3] lg:max-h-none">
                         <Image
                             src={herb.image}
                             alt={herb.name}
-                            width={1280}
-                            height={720}
-                            sizes="(max-width:1024px) 100vw, 50vw"
-                            className="h-full max-h-[500px] w-full object-cover"
+                            fill
+                            sizes="(max-width:1024px) 100vw, 360px"
+                            className="object-cover"
+                            priority
                         />
                     </div>
+                </div>
 
-                    {/* CONTENT */}
-                    <div className="flex flex-col justify-center">
-                        <h2 className="mb-6 text-4xl font-bold text-[#1f4d2e]">
-                            {herb.name}
-                        </h2>
+                {/* ISI + VIDEO + KOMENTAR */}
+                <div className="min-w-0">
+                    {isHtmlContent ? (
+                        /* Format baru: satu blok prose. Deskripsi tidak
+                           ditampilkan terpisah karena memang diambil
+                           dari isi, sehingga akan mengulang. */
+                        <div
+                            className="max-w-[72ch] text-base leading-7 text-[#33443a] prose prose-headings:font-extrabold prose-headings:text-[#1f4d2e] prose-headings:tracking-tight prose-a:text-[#2f6b3f] prose-a:no-underline hover:prose-a:underline prose-strong:text-[#1f4d2e] prose-blockquote:border-l-4 prose-blockquote:border-[#7dbb43] prose-blockquote:italic prose-blockquote:text-[#5f6f61] prose-img:rounded-xl prose-img:border prose-img:border-[#dce6dc] sm:text-lg sm:leading-8"
+                            dangerouslySetInnerHTML={{
+                                __html: herb.content,
+                            }}
+                        />
+                    ) : (
+                        <div className="max-w-[72ch] space-y-8">
+                            <section>
+                                <SectionTitle>Deskripsi</SectionTitle>
 
-                        <div className="space-y-6 text-[17px] leading-relaxed text-[#425445]">
-                            <div>
-                                <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                    Deskripsi
-                                </h3>
-
-                                <p className="whitespace-pre-line break-words">
-                                    {herb.description}
+                                <p className="break-words whitespace-pre-line text-base leading-8 text-[#33443a]">
+                                    {renderTextWithLinks(herb.description)}
                                 </p>
-                            </div>
+                            </section>
 
-                            <div>
-                                <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                    Nama Latin
-                                </h3>
+                            {herb.benefits ? (
+                                <section>
+                                    <SectionTitle>Khasiat</SectionTitle>
 
-                                <p>{herb.latinName || "-"}</p>
-                            </div>
-
-                            <div>
-                                <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                    Kategori
-                                </h3>
-
-                                <p>{herb.category.name}</p>
-                            </div>
-
-                            {!isHtmlContent && (
-                                <div>
-                                    <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                        Khasiat
-                                    </h3>
-
-                                    <p className="whitespace-pre-line break-words">
-                                        {herb.benefits}
+                                    <p className="break-words whitespace-pre-line text-base leading-8 text-[#33443a]">
+                                        {renderTextWithLinks(herb.benefits)}
                                     </p>
-                                </div>
-                            )}
+                                </section>
+                            ) : null}
 
-                            {isHtmlContent ? (
-                                /* Konten format baru: satu blok HTML,
-                                   sudah disanitasi di server saat simpan. */
-                                <div
-                                    className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-[#1f4d2e] prose-strong:text-[#1f4d2e] prose-a:text-[#2f6b3f] prose-a:underline prose-blockquote:border-l-[#7dbb43] prose-blockquote:text-[#5f6f61] prose-img:rounded-3xl"
-                                    dangerouslySetInnerHTML={{
-                                        __html: herb.content,
-                                    }}
-                                />
-                            ) : (
-                                <div>
-                                    <h3 className="mb-2 text-lg font-bold text-[#1f4d2e]">
-                                        Konten
-                                    </h3>
+                            <section>
+                                <SectionTitle>Konten</SectionTitle>
 
-                                    <p className="whitespace-pre-line break-words">
-                                        {herb.content}
-                                    </p>
-                                </div>
-                            )}
+                                <p className="break-words whitespace-pre-line text-base leading-8 text-[#33443a]">
+                                    {renderTextWithLinks(herb.content)}
+                                </p>
+                            </section>
                         </div>
+                    )}
+
+                    {/* VIDEO EDUKASI */}
+                    {videos.length > 0 ? (
+                        <section className="mt-9 max-w-[72ch]">
+                            <SectionTitle>Video Edukasi</SectionTitle>
+
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                {videos.map((src) => (
+                                    <div
+                                        key={src}
+                                        className="aspect-video max-h-[360px] w-full overflow-hidden rounded-xl border border-[#dce6dc] bg-black"
+                                    >
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            className="h-full w-full object-contain"
+                                        >
+                                            <source src={src} />
+                                        </video>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    ) : null}
+
+                    {/* KOMENTAR */}
+                    <div className="mt-10">
+                        <ArticleComments
+                            articleId={herb.id}
+                            user={user}
+                        />
                     </div>
                 </div>
-            </div>
-
-            {/* VIDEO */}
-            <div className="mt-10 grid gap-8 lg:grid-cols-2">
-                {herb.video1 && (
-                    <div className="rounded-[28px] border border-[#dce6dc] bg-white p-5 shadow-sm">
-                        <h2 className="mb-5 text-2xl font-bold text-[#1f4d2e]">
-                            Video Edukasi
-                        </h2>
-
-                        <video controls className="w-full rounded-2xl">
-                            <source src={herb.video1} />
-                        </video>
-                    </div>
-                )}
-
-                {herb.video2 && (
-                    <div className="rounded-[28px] border border-[#dce6dc] bg-white p-5 shadow-sm">
-                        <h2 className="mb-5 text-2xl font-bold text-[#1f4d2e]">
-                            Cara Pengolahan
-                        </h2>
-
-                        <video controls className="w-full rounded-2xl">
-                            <source src={herb.video2} />
-                        </video>
-                    </div>
-                )}
-            </div>
-
-            {/* COMMENTS */}
-            <div className="mt-10">
-                <ArticleComments articleId={herb.id} user={user} />
             </div>
         </AppLayout>
     );

@@ -47,6 +47,15 @@ export async function POST(
             );
         }
 
+        /* Body opsional { liked: true|false } membuat endpoint ini
+           idempoten: keadaan akhir ditentukan client, bukan toggle
+           buta, sehingga klik beruntun tidak menghasilkan hitungan
+           yang salah. Tanpa body tetap toggle (kompatibel lama). */
+        const body = await req.json().catch(() => null);
+
+        const desired =
+            body && typeof body.liked === "boolean" ? body.liked : null;
+
         const existing = await prisma.forumLike.findUnique({
             where: {
                 postId_userId: {
@@ -57,25 +66,34 @@ export async function POST(
             },
         });
 
-        if (existing) {
+        const shouldLike = desired === null ? !existing : desired;
+
+        if (shouldLike && !existing) {
+            await prisma.forumLike.create({
+                data: {
+                    postId: id,
+
+                    userId: user.id,
+                },
+            });
+        } else if (!shouldLike && existing) {
             await prisma.forumLike.delete({
                 where: {
                     id: existing.id,
                 },
             });
-
-            return NextResponse.json({ liked: false });
         }
 
-        await prisma.forumLike.create({
-            data: {
+        const likeCount = await prisma.forumLike.count({
+            where: {
                 postId: id,
-
-                userId: user.id,
             },
         });
 
-        return NextResponse.json({ liked: true });
+        return NextResponse.json({
+            liked: shouldLike,
+            likeCount,
+        });
     } catch (error) {
         console.error(error);
 

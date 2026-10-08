@@ -70,13 +70,22 @@ export async function PUT(
             );
         }
 
-        const updated = await prisma.forumComment.update({
+        /* Adapter Neon HTTP tidak mendukung transaksi: `update`
+           dengan `include` gagal "Transactions are not supported
+           in HTTP mode". Update tanpa `include`, baca ulang. */
+        await prisma.forumComment.update({
             where: {
                 id: commentId,
             },
 
             data: {
                 content,
+            },
+        });
+
+        const updated = await prisma.forumComment.findUnique({
+            where: {
+                id: commentId,
             },
 
             include: {

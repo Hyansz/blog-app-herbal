@@ -8,12 +8,20 @@ import { validateProfanity } from "@/lib/profanity";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-    const posts = await prisma.forumPost.findMany({
-        orderBy: {
-            createdAt: "desc",
+/* Adapter Neon HTTP (PrismaNeonHTTP) tidak mendukung transaksi.
+   Setiap `create`/`update` yang memakai `include` dibungkus
+   transaksi implisit dan gagal dengan "Transactions are not
+   supported in HTTP mode". Karena itu tulis tanpa `include`,
+   lalu baca ulang dengan bentuk respon yang sama. */
+const POST_INCLUDE = {
+    author: {
+        select: {
+            id: true,
+            name: true,
+            role: true,
         },
-
+    },
+    comments: {
         include: {
             author: {
                 select: {
@@ -22,30 +30,55 @@ export async function GET() {
                     role: true,
                 },
             },
-            comments: {
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            name: true,
-                            role: true,
-                        },
-                    },
-                },
-
-                orderBy: {
-                    createdAt: "asc",
-                },
-            },
-            likes: {
-                select: {
-                    id: true,
-                },
-            },
         },
+
+        orderBy: {
+            createdAt: "asc" as const,
+        },
+    },
+    likes: {
+        select: {
+            id: true,
+        },
+    },
+};
+
+export async function GET() {
+    /* likedByMe dihitung di server dari sesi yang sedang login —
+       tidak pernah dipercaya dari userId milik client. Tamu
+       selalu false. */
+    const user = await getCurrentUser();
+
+    const posts = await prisma.forumPost.findMany({
+        orderBy: {
+            createdAt: "desc",
+        },
+
+        include: POST_INCLUDE,
     });
 
-    return NextResponse.json(posts);
+    const likedPostIds = new Set<string>();
+
+    if (user) {
+        const likes = await prisma.forumLike.findMany({
+            where: {
+                userId: user.id,
+            },
+
+            select: {
+                postId: true,
+            },
+        });
+
+        for (const like of likes) likedPostIds.add(like.postId);
+    }
+
+    return NextResponse.json(
+        posts.map((post) => ({
+            ...post,
+            likedByMe: likedPostIds.has(post.id),
+        })),
+    );
 }
 
 export async function POST(req: Request) {
@@ -97,39 +130,17 @@ export async function POST(req: Request) {
 
                 authorId: user.id,
             },
-
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                        role: true,
-                    },
-                },
-                comments: {
-                    include: {
-                        author: {
-                            select: {
-                                id: true,
-                                name: true,
-                                role: true,
-                            },
-                        },
-                    },
-
-                    orderBy: {
-                        createdAt: "asc",
-                    },
-                },
-                likes: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
         });
 
-        return NextResponse.json(post);
+        const detail = await prisma.forumPost.findUnique({
+            where: {
+                id: post.id,
+            },
+
+            include: POST_INCLUDE,
+        });
+
+        return NextResponse.json(detail ?? post);
     } catch (error) {
         console.error(error);
 

@@ -89,7 +89,11 @@ export async function POST(
             );
         }
 
-        /* authorId diambil dari sesi, tidak pernah dari body. */
+        /* authorId diambil dari sesi, tidak pernah dari body.
+           Adapter Neon HTTP tidak mendukung transaksi, jadi
+           `create` dengan `include` gagal "Transactions are not
+           supported in HTTP mode": tulis tanpa `include`,
+           baca ulang dengan bentuk respon yang sama. */
         const comment = await prisma.articleComment.create({
             data: {
                 content,
@@ -97,6 +101,12 @@ export async function POST(
                 articleId: id,
 
                 authorId: user.id,
+            },
+        });
+
+        const detail = await prisma.articleComment.findUnique({
+            where: {
+                id: comment.id,
             },
 
             include: {
@@ -110,7 +120,7 @@ export async function POST(
             },
         });
 
-        return NextResponse.json(comment);
+        return NextResponse.json(detail ?? comment);
     } catch (error) {
         console.error(error);
 

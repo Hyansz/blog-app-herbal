@@ -135,7 +135,10 @@ function HeaderComponent({
 
                                     <div className="relative flex items-center gap-3">
                                         <div className="text-right leading-tight">
-                                            <p className="text-sm font-bold text-[#1f4d2e]">
+                                            <p
+                                                className="max-w-[160px] truncate text-sm font-bold text-[#1f4d2e]"
+                                                title={user.name}
+                                            >
                                                 {user.name}
                                             </p>
 

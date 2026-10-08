@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 interface DashboardHeaderProps {
     title: string;
     description?: string;
+    eyebrow?: string;
     icon?: ReactNode;
     children?: ReactNode;
 }
@@ -15,6 +16,7 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({
     title,
     description,
+    eyebrow = "Dashboard Admin",
     icon,
     children,
 }: DashboardHeaderProps) {
@@ -23,7 +25,7 @@ export default function DashboardHeader({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#dff0d2]">
-                        Dashboard Admin
+                        {eyebrow}
                     </p>
 
                     <h1 className="mt-2 flex min-w-0 flex-wrap items-center gap-3 text-2xl font-black leading-tight sm:text-3xl">

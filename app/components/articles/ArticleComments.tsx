@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import ProfanityModal from "@/app/components/ProfanityModal";
 import LoadingButton from "@/app/components/LoadingButton";
-import { FiClock, FiMessageCircle, FiSend, FiUser } from "react-icons/fi";
-import { Eye, EyeOff } from "lucide-react";
+import LoginModal from "@/app/components/LoginModal";
+import RegisterModal from "@/app/components/RegisterModal";
+import { FiMessageCircle, FiSend } from "react-icons/fi";
 import { validateProfanity } from "@/lib/profanity";
+import { formatRelativeTime } from "@/lib/time";
 
 interface Props {
     articleId: string;
@@ -17,21 +19,26 @@ interface Props {
     } | null;
 }
 
+interface CommentItem {
+    id: string;
+    content: string;
+    createdAt: string;
+    author: {
+        name: string;
+        role: string;
+    };
+}
+
 export default function ArticleComments({ articleId, user }: Props) {
-    const [comments, setComments] = useState<any[]>([]);
+    const [comments, setComments] = useState<CommentItem[]>([]);
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(false);
+
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
+
     const isLoggedIn = !!user;
-    const [loginEmail, setLoginEmail] = useState("");
-    const [loginPassword, setLoginPassword] = useState("");
-    const [loginLoading, setLoginLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [showRegister, setShowRegister] = useState(false);
-    const [registerName, setRegisterName] = useState("");
-    const [registerEmail, setRegisterEmail] = useState("");
-    const [registerPassword, setRegisterPassword] = useState("");
-    const [registerLoading, setRegisterLoading] = useState(false);
+
     const [profanityModal, setProfanityModal] = useState({
         open: false,
         message: "",
@@ -45,7 +52,7 @@ export default function ArticleComments({ articleId, user }: Props) {
 
             const data = await res.json();
 
-            setComments(data);
+            if (Array.isArray(data)) setComments(data);
         } catch (error) {
             console.error(error);
         }
@@ -54,6 +61,11 @@ export default function ArticleComments({ articleId, user }: Props) {
     useEffect(() => {
         loadComments();
     }, []);
+
+    function closeAuthModals() {
+        setShowLoginModal(false);
+        setShowRegisterModal(false);
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -107,138 +119,115 @@ export default function ArticleComments({ articleId, user }: Props) {
 
     return (
         <>
-            <section className="mt-12 overflow-hidden rounded-[36px] border border-[#dce6dc] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+            <section className="overflow-hidden rounded-2xl border border-[#dce6dc] bg-white shadow-sm">
                 {/* HEADER */}
-                <div className="border-b border-[#eef2ea] px-8 py-6">
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1f4d2e] to-[#7dbb43] text-white shadow-lg">
-                            <FiMessageCircle className="text-2xl" />
+                <div className="border-b border-[#eef2ea] px-5 py-4 sm:px-6">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1f4d2e] to-[#7dbb43] text-white">
+                            <FiMessageCircle />
                         </div>
 
-                        <div>
-                            <h2 className="text-3xl font-black text-[#1f4d2e]">
-                                Komentar Artikel
-                            </h2>
-
-                            <p className="mt-1 text-sm text-[#6b7b6e]">
-                                Diskusi komunitas HerbalPedia Indonesia
-                            </p>
-                        </div>
+                        <h2 className="text-xl font-extrabold text-[#1f4d2e] sm:text-2xl">
+                            Komentar ({comments.length})
+                        </h2>
                     </div>
                 </div>
 
-                {/* FORM */}
-                <div className="border-b border-[#eef2ea] bg-[#fafcf9] p-8">
-                    <form onSubmit={handleSubmit}>
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder={
-                                isLoggedIn
-                                    ? "Bagikan pendapat atau pengalamanmu tentang herbal ini..."
-                                    : "Login untuk ikut berdiskusi..."
-                            }
-                            className="h-36 w-full resize-none rounded-[28px] border border-[#dce6dc] bg-white p-6 text-[15px] leading-relaxed text-[#1f4d2e] outline-none transition focus:border-[#7dbb43]"
-                        />
+                {/* FORM / CTA */}
+                <div className="border-b border-[#eef2ea] bg-[#fafcf9] px-5 py-5 sm:px-6">
+                    {isLoggedIn ? (
+                        <form onSubmit={handleSubmit}>
+                            <textarea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="Bagikan pendapat atau pengalamanmu tentang herbal ini..."
+                                className="h-28 w-full resize-none rounded-2xl border border-[#dce6dc] bg-white px-5 py-4 text-[15px] leading-relaxed text-[#1f4d2e] outline-none transition focus:border-[#7dbb43]"
+                            />
 
-                        {!isLoggedIn && (
-                            <div className="mt-5 rounded-2xl border border-yellow-200 bg-yellow-50 px-5 py-4 text-sm leading-relaxed text-yellow-700">
-                                Kamu dapat membaca semua komentar tanpa login,
-                                namun untuk ikut berdiskusi harus login terlebih
-                                dahulu.
+                            <div className="mt-4 flex justify-end">
+                                <LoadingButton
+                                    type="submit"
+                                    loading={loading}
+                                    loadingText="Mengirim..."
+                                    className="inline-flex items-center gap-2 rounded-xl bg-[#1f4d2e] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#17351f]"
+                                >
+                                    <FiSend />
+                                    Kirim
+                                </LoadingButton>
                             </div>
-                        )}
+                        </form>
+                    ) : (
+                        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm leading-relaxed text-[#5f6f61]">
+                                Masuk untuk ikut berkomentar pada artikel ini.
+                            </p>
 
-                        <div className="mt-6 flex justify-end">
-                            <LoadingButton
-                                type="submit"
-                                loading={loading}
-                                loadingText="Mengirim..."
-                                className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#1f4d2e] to-[#2f6b3f] px-7 py-4 font-semibold text-white shadow-lg transition hover:scale-[1.02]"
+                            <button
+                                type="button"
+                                onClick={() => setShowLoginModal(true)}
+                                className="inline-flex h-11 shrink-0 items-center rounded-xl bg-[#1f4d2e] px-6 text-sm font-bold text-white transition hover:bg-[#17351f]"
                             >
-                                <FiSend />
-
-                                Kirim Komentar
-                            </LoadingButton>
+                                Masuk untuk ikut berkomentar
+                            </button>
                         </div>
-                    </form>
+                    )}
                 </div>
 
-                {/* COMMENTS */}
-                <div className="p-8">
-                    <div className="mb-6 flex items-center justify-between">
-                        <h3 className="text-2xl font-black text-[#1f4d2e]">
-                            Semua Komentar
-                        </h3>
-
-                        <div className="rounded-2xl bg-[#f4f7f1] px-4 py-2 text-sm font-bold text-[#1f4d2e]">
-                            {comments.length} komentar
-                        </div>
-                    </div>
-
-                    <div className="space-y-5">
+                {/* KOMENTAR */}
+                <div className="px-5 py-5 sm:px-6">
+                    <div className="space-y-4">
                         {comments.map((comment) => (
-                            <div
+                            <article
                                 key={comment.id}
-                                className="rounded-[28px] border border-[#e7efe4] bg-[#fcfdfb] p-6 transition hover:shadow-md"
+                                className="rounded-2xl border border-[#e7efe4] bg-[#fcfdfb] p-4 transition hover:shadow-sm sm:p-5"
                             >
-                                <div className="mb-4 flex items-start justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1f4d2e] to-[#7dbb43] text-lg font-black text-white">
-                                            {comment.author.name
-                                                ?.charAt(0)
-                                                .toUpperCase()}
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-center gap-3">
-                                                <h4 className="text-lg font-bold text-[#1f4d2e]">
-                                                    {comment.author.name}
-                                                </h4>
-
-                                                {comment.author.role ===
-                                                    "ADMIN" && (
-                                                    <span className="rounded-full bg-[#1f4d2e] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                                                        ADMIN
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="mt-1 flex items-center gap-2 text-sm text-[#6f7d72]">
-                                                <FiClock />
-
-                                                <span>
-                                                    {new Date(
-                                                        comment.createdAt,
-                                                    ).toLocaleString("id-ID")}
-                                                </span>
-                                            </div>
-                                        </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1f4d2e] to-[#7dbb43] text-sm font-black text-white">
+                                        {comment.author.name
+                                            ?.charAt(0)
+                                            .toUpperCase()}
                                     </div>
 
-                                    <div className="rounded-xl bg-[#f4f7f1] p-3">
-                                        <FiUser className="text-[#5f6f61]" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                            <span className="truncate text-[15px] font-bold text-[#1f4d2e]">
+                                                {comment.author.name}
+                                            </span>
+
+                                            {comment.author.role ===
+                                                "ADMIN" && (
+                                                <span className="rounded-full bg-[#1f4d2e] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                                                    ADMIN
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-0.5 text-xs text-[#6f7d72]">
+                                            {formatRelativeTime(
+                                                comment.createdAt,
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <p className="whitespace-pre-wrap text-[15px] leading-[1.9] text-[#33443a]">
+                                <p className="mt-3 break-words whitespace-pre-wrap text-[15px] leading-[1.85] text-[#33443a]">
                                     {comment.content}
                                 </p>
-                            </div>
+                            </article>
                         ))}
                     </div>
 
                     {comments.length === 0 && (
-                        <div className="rounded-[28px] border border-dashed border-[#dce6dc] bg-[#fafcf9] px-8 py-16 text-center">
-                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ec]">
-                                <FiMessageCircle className="text-3xl text-[#1f4d2e]" />
+                        <div className="rounded-2xl border border-dashed border-[#dce6dc] bg-[#fafcf9] px-6 py-12 text-center">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#eef6ec]">
+                                <FiMessageCircle className="text-2xl text-[#1f4d2e]" />
                             </div>
 
-                            <h3 className="mt-6 text-2xl font-black text-[#1f4d2e]">
-                                Belum Ada Komentar
+                            <h3 className="mt-4 text-lg font-extrabold text-[#1f4d2e]">
+                                Belum ada komentar
                             </h3>
 
-                            <p className="mt-3 text-[#6f7d72]">
+                            <p className="mt-2 text-sm text-[#6f7d72]">
                                 Jadilah yang pertama berdiskusi pada artikel
                                 ini.
                             </p>
@@ -247,292 +236,42 @@ export default function ArticleComments({ articleId, user }: Props) {
                 </div>
             </section>
 
-            {/* LOGIN / REGISTER MODAL */}
+            {/* LOGIN */}
             {showLoginModal && (
-                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-5 backdrop-blur-sm">
-                    <div className="relative w-full max-w-md rounded-[32px] border border-[#dce6dc] bg-white p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
-                        <button
-                            onClick={() => {
+                <div className="fixed inset-0 z-[999]">
+                    <div
+                        onClick={closeAuthModals}
+                        className="absolute inset-0 cursor-pointer bg-black/30 backdrop-blur-sm"
+                    />
+
+                    <div className="relative z-[1000] flex min-h-screen items-center justify-center p-6">
+                        <LoginModal
+                            onClose={closeAuthModals}
+                            onOpenRegister={() => {
                                 setShowLoginModal(false);
-
-                                setShowRegister(false);
+                                setShowRegisterModal(true);
                             }}
-                            className="absolute right-5 top-5 rounded-full bg-[#f4f7f1] p-2 transition hover:bg-[#e7efe4]"
-                        >
-                            ✕
-                        </button>
+                        />
+                    </div>
+                </div>
+            )}
 
-                        {/* LOGIN */}
-                        {!showRegister ? (
-                            <>
-                                <h1 className="mb-2 text-center text-4xl font-bold text-[#1f4d2e]">
-                                    Login
-                                </h1>
+            {/* REGISTER */}
+            {showRegisterModal && (
+                <div className="fixed inset-0 z-[999]">
+                    <div
+                        onClick={closeAuthModals}
+                        className="absolute inset-0 cursor-pointer bg-black/30 backdrop-blur-sm"
+                    />
 
-                                <p className="mb-8 text-center text-sm text-[#6b7b6d]">
-                                    Masuk untuk memberikan komentar pada artikel
-                                    herbal.
-                                </p>
-
-                                <form
-                                    onSubmit={async (e) => {
-                                        e.preventDefault();
-
-                                        if (loginLoading) return;
-
-                                        setLoginLoading(true);
-
-                                        try {
-                                            const res = await fetch(
-                                                "/api/auth/login",
-                                                {
-                                                    method: "POST",
-                                                    headers: {
-                                                        "Content-Type":
-                                                            "application/json",
-                                                    },
-                                                    body: JSON.stringify({
-                                                        email: loginEmail,
-                                                        password: loginPassword,
-                                                    }),
-                                                },
-                                            );
-
-                                            const data = await res.json();
-
-                                            if (res.ok) {
-                                                localStorage.setItem(
-                                                    "role",
-                                                    data.user.role,
-                                                );
-
-                                                document.body.style.overflow =
-                                                    "auto";
-
-                                                setShowLoginModal(false);
-
-                                                window.location.reload();
-                                            } else {
-                                                alert(
-                                                    data.message ||
-                                                        "Login gagal",
-                                                );
-                                            }
-                                        } catch {
-                                            alert("Terjadi kesalahan");
-                                        } finally {
-                                            setLoginLoading(false);
-                                        }
-                                    }}
-                                    className="space-y-5"
-                                >
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        value={loginEmail}
-                                        onChange={(e) =>
-                                            setLoginEmail(e.target.value)
-                                        }
-                                        className="w-full rounded-2xl border border-[#dce6dc] px-5 py-4 outline-none transition focus:border-[#7dbb43]"
-                                    />
-
-                                    <div className="relative">
-                                        <input
-                                            type={
-                                                showPassword
-                                                    ? "text"
-                                                    : "password"
-                                            }
-                                            placeholder="Password"
-                                            value={loginPassword}
-                                            onChange={(e) =>
-                                                setLoginPassword(e.target.value)
-                                            }
-                                            className="w-full rounded-2xl border border-[#dce6dc] px-5 py-4 pr-14 outline-none transition focus:border-[#7dbb43]"
-                                        />
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setShowPassword(!showPassword)
-                                            }
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5f6f61]"
-                                        >
-                                            {showPassword ? (
-                                                <Eye size={20} />
-                                            ) : (
-                                                <EyeOff size={20} />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    <LoadingButton
-                                        loading={loginLoading}
-                                        loadingText="Masuk..."
-                                        className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#17351f]"
-                                    >
-                                        Masuk
-                                    </LoadingButton>
-
-                                    <div className="text-center">
-                                        <p className="text-sm text-[#5f6f61]">
-                                            Belum punya akun?
-                                        </p>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setShowRegister(true)
-                                            }
-                                            className="mt-2 font-semibold text-[#2f6b3f]"
-                                        >
-                                            Daftar sekarang
-                                        </button>
-                                    </div>
-                                </form>
-                            </>
-                        ) : (
-                            <>
-                                {/* REGISTER */}
-                                <h1 className="mb-2 text-center text-4xl font-bold text-[#1f4d2e]">
-                                    Register
-                                </h1>
-
-                                <p className="mb-8 text-center text-sm text-[#6b7b6d]">
-                                    Buat akun untuk ikut berdiskusi di
-                                    HerbalPedia.
-                                </p>
-
-                                <form
-                                    onSubmit={async (e) => {
-                                        e.preventDefault();
-
-                                        if (registerLoading) return;
-
-                                        setRegisterLoading(true);
-
-                                        try {
-                                            const res = await fetch(
-                                                "/api/auth/register",
-                                                {
-                                                    method: "POST",
-                                                    headers: {
-                                                        "Content-Type":
-                                                            "application/json",
-                                                    },
-                                                    body: JSON.stringify({
-                                                        name: registerName,
-                                                        email: registerEmail,
-                                                        password:
-                                                            registerPassword,
-                                                    }),
-                                                },
-                                            );
-
-                                            const data = await res.json();
-
-                                            if (res.ok) {
-                                                alert(
-                                                    "Register berhasil, silakan login",
-                                                );
-
-                                                setShowRegister(false);
-
-                                                setRegisterName("");
-                                                setRegisterEmail("");
-                                                setRegisterPassword("");
-                                            } else {
-                                                alert(
-                                                    data.message ||
-                                                        "Register gagal",
-                                                );
-                                            }
-                                        } catch {
-                                            alert("Terjadi kesalahan");
-                                        } finally {
-                                            setRegisterLoading(false);
-                                        }
-                                    }}
-                                    className="space-y-5"
-                                >
-                                    <input
-                                        type="text"
-                                        placeholder="Nama"
-                                        value={registerName}
-                                        onChange={(e) =>
-                                            setRegisterName(e.target.value)
-                                        }
-                                        className="w-full rounded-2xl border border-[#dce6dc] px-5 py-4 outline-none transition focus:border-[#7dbb43]"
-                                    />
-
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        value={registerEmail}
-                                        onChange={(e) =>
-                                            setRegisterEmail(e.target.value)
-                                        }
-                                        className="w-full rounded-2xl border border-[#dce6dc] px-5 py-4 outline-none transition focus:border-[#7dbb43]"
-                                    />
-
-                                    <div className="relative">
-                                        <input
-                                            type={
-                                                showPassword
-                                                    ? "text"
-                                                    : "password"
-                                            }
-                                            placeholder="Password"
-                                            value={registerPassword}
-                                            onChange={(e) =>
-                                                setRegisterPassword(
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full rounded-2xl border border-[#dce6dc] px-5 py-4 pr-14 outline-none transition focus:border-[#7dbb43]"
-                                        />
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setShowPassword(!showPassword)
-                                            }
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5f6f61]"
-                                        >
-                                            {showPassword ? (
-                                                <Eye size={20} />
-                                            ) : (
-                                                <EyeOff size={20} />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    <LoadingButton
-                                        loading={registerLoading}
-                                        loadingText="Mendaftarkan..."
-                                        className="flex w-full items-center justify-center rounded-2xl bg-[#1f4d2e] py-4 font-semibold text-white transition hover:bg-[#17351f]"
-                                    >
-                                        Daftar
-                                    </LoadingButton>
-
-                                    <div className="text-center">
-                                        <p className="text-sm text-[#5f6f61]">
-                                            Sudah punya akun?
-                                        </p>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setShowRegister(false)
-                                            }
-                                            className="mt-2 font-semibold text-[#2f6b3f]"
-                                        >
-                                            Login sekarang
-                                        </button>
-                                    </div>
-                                </form>
-                            </>
-                        )}
+                    <div className="relative z-[1000] flex min-h-screen items-center justify-center p-6">
+                        <RegisterModal
+                            onClose={closeAuthModals}
+                            onOpenLogin={() => {
+                                setShowRegisterModal(false);
+                                setShowLoginModal(true);
+                            }}
+                        />
                     </div>
                 </div>
             )}

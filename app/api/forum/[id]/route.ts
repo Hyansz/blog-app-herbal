@@ -6,6 +6,40 @@ import { getCurrentUser } from "@/lib/auth";
 
 import { validateProfanity } from "@/lib/profanity";
 
+/* Adapter Neon HTTP tidak mendukung transaksi, sehingga
+   `update` dengan `include` gagal "Transactions are not
+   supported in HTTP mode". Update tanpa `include`, lalu
+   baca ulang dengan bentuk respon yang sama. */
+const POST_INCLUDE = {
+    author: {
+        select: {
+            id: true,
+            name: true,
+            role: true,
+        },
+    },
+    comments: {
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    role: true,
+                },
+            },
+        },
+
+        orderBy: {
+            createdAt: "asc" as const,
+        },
+    },
+    likes: {
+        select: {
+            id: true,
+        },
+    },
+};
+
 export async function PUT(
     req: Request,
     { params }: { params: Promise<{ id: string }> },
@@ -67,7 +101,7 @@ export async function PUT(
             );
         }
 
-        const updated = await prisma.forumPost.update({
+        await prisma.forumPost.update({
             where: {
                 id,
             },
@@ -75,36 +109,14 @@ export async function PUT(
             data: {
                 content,
             },
+        });
 
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                        role: true,
-                    },
-                },
-                comments: {
-                    include: {
-                        author: {
-                            select: {
-                                id: true,
-                                name: true,
-                                role: true,
-                            },
-                        },
-                    },
-
-                    orderBy: {
-                        createdAt: "asc",
-                    },
-                },
-                likes: {
-                    select: {
-                        id: true,
-                    },
-                },
+        const updated = await prisma.forumPost.findUnique({
+            where: {
+                id,
             },
+
+            include: POST_INCLUDE,
         });
 
         return NextResponse.json(updated);

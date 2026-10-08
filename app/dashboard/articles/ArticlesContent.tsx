@@ -4,17 +4,33 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
+import ConfirmModal from "@/app/components/ConfirmModal";
 import DashboardHeader from "@/app/components/DashboardHeader";
-import LoadingButton from "@/app/components/LoadingButton";
+
+/* Bentuk respon GET /api/articles (hanya field yang dipakai daftar). */
+interface ArticleListItem {
+    id: string;
+    name: string;
+    slug: string;
+    image: string;
+    description: string;
+    category?: { name: string } | null;
+}
 
 export default function ArticlesContent() {
     const [search, setSearch] = useState("");
 
-    const [articles, setArticles] = useState<any[]>([]);
+    const [articles, setArticles] = useState<ArticleListItem[]>([]);
 
     const [loading, setLoading] = useState(true);
 
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const [deleteTarget, setDeleteTarget] = useState<ArticleListItem | null>(
+        null,
+    );
+
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     useEffect(() => {
         const handleSearch = (e: any) => {
@@ -44,27 +60,56 @@ export default function ArticlesContent() {
         );
     }, [articles, search]);
 
-    async function handleDelete(id: string) {
+    function openDelete(item: ArticleListItem) {
         if (deletingId) return;
 
-        const confirmDelete = confirm("Hapus artikel?");
+        setDeleteError(null);
+        setDeleteTarget(item);
+    }
 
-        if (!confirmDelete) return;
+    async function handleDelete() {
+        if (!deleteTarget || deletingId) return;
+
+        const id = deleteTarget.id;
 
         setDeletingId(id);
+        setDeleteError(null);
+
+        let success = false;
 
         try {
-            await fetch(`/api/articles/${id}`, {
+            const res = await fetch(`/api/articles/${id}`, {
                 method: "DELETE",
             });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+
+                setDeleteError(
+                    data?.message ||
+                        "Gagal menghapus artikel. Coba lagi.",
+                );
+
+                return;
+            }
 
             setArticles((prev) =>
                 prev.filter((article) => article.id !== id),
             );
+
+            success = true;
         } catch (error) {
             console.error(error);
+
+            setDeleteError(
+                "Gagal menghapus artikel. Periksa koneksi Anda lalu coba lagi.",
+            );
         } finally {
             setDeletingId(null);
+
+            /* Modal ditutup di finally hanya bila penghapusan berhasil;
+               saat gagal modal tetap terbuka agar error terbaca. */
+            if (success) setDeleteTarget(null);
         }
     }
 
@@ -163,20 +208,41 @@ export default function ArticlesContent() {
                                         Edit
                                     </Link>
 
-                                    <LoadingButton
-                                        onClick={() => handleDelete(item.id)}
-                                        loading={deletingId === item.id}
-                                        loadingText="Menghapus..."
-                                        className="flex-1 rounded-2xl bg-red-500 py-3 font-semibold text-white"
+                                    <button
+                                        type="button"
+                                        onClick={() => openDelete(item)}
+                                        className="flex-1 rounded-2xl bg-red-500 py-3 font-semibold text-white transition hover:bg-red-600"
                                     >
                                         Hapus
-                                    </LoadingButton>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            <ConfirmModal
+                open={Boolean(deleteTarget)}
+                title="Hapus artikel?"
+                description={
+                    <>
+                        <span className="font-semibold text-[#17351f]">
+                            {deleteTarget?.name}
+                        </span>{" "}
+                        akan dihapus permanen dari daftar artikel. Komentar
+                        pada artikel ini juga ikut terhapus karena relasi
+                        cascade. Tindakan ini tidak bisa dibatalkan.
+                    </>
+                }
+                confirmText="Hapus"
+                loadingText="Menghapus..."
+                loading={deletingId === deleteTarget?.id}
+                error={deleteError}
+                danger
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteTarget(null)}
+            />
         </>
     );
 }
