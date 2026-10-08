@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
+import DashboardHeader from "@/app/components/DashboardHeader";
 import LoadingButton from "@/app/components/LoadingButton";
 
 export default function ArticlesContent() {
@@ -70,32 +71,18 @@ export default function ArticlesContent() {
     return (
         <>
             {/* HERO */}
-            <div className="relative mb-12 overflow-hidden rounded-[36px] border border-[#31543d] bg-gradient-to-br from-[#17351f] via-[#1f4d2e] to-[#7dbb43] p-12 text-white shadow-[0_20px_60px_rgba(16,40,23,0.25)]">
-                <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-[#dff0d2]/10 blur-3xl" />
-
-                <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="max-w-3xl">
-                        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.35em] text-[#dff0d2]">
-                            Dashboard Admin
-                        </p>
-
-                        <h1 className="text-5xl font-black leading-tight lg:text-6xl">
-                            Kelola Artikel
-                        </h1>
-
-                        <p className="mt-5 text-lg leading-relaxed text-[#eef7e8]">
-                            Tambahkan, edit, dan hapus artikel herbal nusantara
-                            dengan mudah.
-                        </p>
-                    </div>
-
+            <div className="mb-12">
+                <DashboardHeader
+                    title="Kelola Artikel"
+                    description="Tambahkan, edit, dan hapus artikel herbal nusantara dengan mudah."
+                >
                     <Link
                         href="/dashboard/articles/create"
-                        className="rounded-2xl bg-white px-7 py-4 text-center font-bold text-[#1f4d2e] shadow-lg transition hover:scale-105"
+                        className="rounded-xl bg-white px-4 py-2.5 text-center text-sm font-bold text-[#1f4d2e] shadow-md transition hover:scale-105"
                     >
                         + Tambah Artikel
                     </Link>
-                </div>
+                </DashboardHeader>
             </div>
 
             {/* HEADER */}

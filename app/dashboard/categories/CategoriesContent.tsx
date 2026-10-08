@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FiEdit2, FiPlus, FiTrash2, FiX } from "react-icons/fi";
 
+import DashboardHeader from "@/app/components/DashboardHeader";
 import LoadingButton from "@/app/components/LoadingButton";
 
 import { CATEGORIES_UPDATED_EVENT } from "@/app/hooks/useCategories";
@@ -167,34 +168,20 @@ export default function CategoriesContent({
         <>
             <main>
                 {/* HERO */}
-                <div className="relative mb-10 overflow-hidden rounded-[36px] border border-[#31543d] bg-gradient-to-br from-[#17351f] via-[#1f4d2e] to-[#7dbb43] p-10 text-white shadow-[0_20px_60px_rgba(16,40,23,0.25)]">
-                    <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-[#dff0d2]/10 blur-3xl" />
-
-                    <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="max-w-3xl">
-                            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.35em] text-[#dff0d2]">
-                                Dashboard Admin
-                            </p>
-
-                            <h1 className="text-5xl font-black leading-tight lg:text-6xl">
-                                Kelola Kategori
-                            </h1>
-
-                            <p className="mt-5 text-lg leading-relaxed text-[#eef7e8]">
-                                Atur kategori herbal nusantara untuk
-                                mengelompokkan artikel dengan lebih rapi dan
-                                terstruktur.
-                            </p>
-                        </div>
-
+                <div className="mb-10">
+                    <DashboardHeader
+                        title="Kelola Kategori"
+                        description="Atur kategori herbal nusantara untuk mengelompokkan artikel dengan lebih rapi dan terstruktur."
+                    >
                         <button
+                            type="button"
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center justify-center gap-2 rounded-2xl bg-white px-7 py-4 font-bold text-[#1f4d2e] shadow-lg transition hover:scale-105"
+                            className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#1f4d2e] shadow-md transition hover:scale-105"
                         >
                             <FiPlus />
                             Tambah Kategori
                         </button>
-                    </div>
+                    </DashboardHeader>
                 </div>
 
                 {/* HEADER */}

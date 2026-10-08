@@ -1,14 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiImage, FiVideo } from "react-icons/fi";
 
 import AppLayout from "@/app/components/AppLayout";
+import DashboardHeader from "@/app/components/DashboardHeader";
 import LoadingButton from "@/app/components/LoadingButton";
+import MediaField from "@/app/components/MediaField";
 import RichTextEditor from "@/app/components/RichTextEditor";
+
+type UploadField = "image" | "video1" | "video2";
+
+const labelClass = "mb-2 block text-sm font-semibold text-[#425445]";
+
+const inputClass =
+    "h-11 w-full rounded-xl border border-[#dce6dc] bg-[#f9fbf8] px-3.5 py-2.5 text-base text-[#425445] outline-none transition placeholder:text-[#9aa89c] focus:border-[#7dbb43] focus:bg-white focus:ring-2 focus:ring-[#7dbb43]/25";
 
 export default function CreateArticlePage() {
     const router = useRouter();
@@ -17,7 +25,9 @@ export default function CreateArticlePage() {
 
     const [categories, setCategories] = useState<any[]>([]);
 
-    const [uploading, setUploading] = useState(false);
+    const [uploadingField, setUploadingField] = useState<
+        UploadField | null
+    >(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -41,12 +51,12 @@ export default function CreateArticlePage() {
             .then((data) => setUser(data));
     }, []);
 
-    async function uploadFile(file: File) {
+    async function uploadFile(file: File, field: UploadField) {
         const formData = new FormData();
 
         formData.append("file", file);
 
-        setUploading(true);
+        setUploadingField(field);
 
         try {
             const res = await fetch("/api/upload", {
@@ -58,7 +68,7 @@ export default function CreateArticlePage() {
 
             return data.url;
         } finally {
-            setUploading(false);
+            setUploadingField(null);
         }
     }
 
@@ -71,7 +81,7 @@ export default function CreateArticlePage() {
             return;
         }
 
-        if (loading || uploading) return;
+        if (loading || uploadingField) return;
 
         setLoading(true);
 
@@ -117,266 +127,249 @@ export default function CreateArticlePage() {
             categories={categories}
             activeMenu="/dashboard/articles"
         >
-            <div className="space-y-8">
-                {/* HERO */}
-                <div className="relative overflow-hidden rounded-[36px] border border-[#31543d] bg-gradient-to-br from-[#17351f] via-[#1f4d2e] to-[#7dbb43] p-10 text-white shadow-[0_20px_60px_rgba(16,40,23,0.25)]">
-                    <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-
-                    <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="max-w-3xl">
-                            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.35em] text-[#dff0d2]">
-                                Dashboard Admin
-                            </p>
-
-                            <h1 className="text-5xl font-black leading-tight lg:text-6xl">
-                                Tambah Artikel Herbal
-                            </h1>
-
-                            <p className="mt-5 text-lg leading-relaxed text-[#eef7e8]">
-                                Tambahkan artikel herbal nusantara lengkap
-                                dengan gambar, video, manfaat, dan informasi
-                                edukatif lainnya.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => router.back()}
-                                className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
-                            >
-                                <FiArrowLeft className="text-lg" />
-                                Kembali
-                            </button>
-
-                            <Link
-                                href="/dashboard/articles"
-                                className="rounded-2xl bg-white px-7 py-4 font-bold text-[#1f4d2e] shadow-lg transition hover:scale-105"
-                            >
-                                Batal
-                            </Link>
-                        </div>
-                    </div>
+            <div className="space-y-6 pb-28 sm:pb-8">
+                {/* HEADER */}
+                <div className="mx-auto max-w-4xl">
+                    <DashboardHeader
+                        title="Tambah Artikel Herbal"
+                        description="Tambahkan artikel herbal nusantara lengkap dengan gambar, video, dan konten edukatif."
+                    >
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                        >
+                            <FiArrowLeft aria-hidden="true" />
+                            Kembali
+                        </button>
+                    </DashboardHeader>
                 </div>
 
                 {/* FORM */}
-                <div className="rounded-[36px] border border-[#dce6dc] bg-white p-8 shadow-[0_15px_45px_rgba(0,0,0,0.06)]">
+                <div className="mx-auto max-w-4xl rounded-2xl border border-[#dce6dc] bg-white p-4 shadow-[0_15px_45px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* BASIC */}
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                            <div>
-                                <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                    Nama Artikel
-                                </label>
+                        {/* 1. INFORMASI DASAR */}
+                        <section className="border-b border-[#e5ece4] pb-8">
+                            <div className="mb-5">
+                                <h2 className="text-base font-bold text-[#1f4d2e]">
+                                    1. Informasi Dasar
+                                </h2>
 
-                                <input
-                                    type="text"
-                                    placeholder="Masukkan nama artikel"
-                                    value={form.name}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            name: e.target.value,
-                                        })
-                                    }
-                                    className="w-full rounded-2xl border border-[#dce6dc] bg-[#f9fbf8] p-4 outline-none transition focus:border-[#7dbb43]"
-                                />
+                                <p className="mt-1 text-sm text-[#5f6f61]">
+                                    Nama artikel, nama latin, dan kategorinya.
+                                </p>
                             </div>
 
-                            <div>
-                                <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                    Nama Latin
-                                </label>
+                            <div className="space-y-5">
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                    <div>
+                                        <label
+                                            htmlFor="article-name"
+                                            className={labelClass}
+                                        >
+                                            Nama Artikel
+                                        </label>
 
-                                <input
-                                    type="text"
-                                    placeholder="Masukkan nama latin"
-                                    value={form.latinName}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            latinName: e.target.value,
-                                        })
-                                    }
-                                    className="w-full rounded-2xl border border-[#dce6dc] bg-[#f9fbf8] p-4 outline-none transition focus:border-[#7dbb43]"
-                                />
-                            </div>
-                        </div>
+                                        <input
+                                            id="article-name"
+                                            type="text"
+                                            placeholder="Masukkan nama artikel"
+                                            value={form.name}
+                                            onChange={(e) =>
+                                                setForm({
+                                                    ...form,
+                                                    name: e.target.value,
+                                                })
+                                            }
+                                            className={inputClass}
+                                        />
+                                    </div>
 
-                        {/* CATEGORY */}
-                        <div>
-                            <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                Kategori Herbal
-                            </label>
+                                    <div>
+                                        <label
+                                            htmlFor="article-latin"
+                                            className={labelClass}
+                                        >
+                                            Nama Latin
+                                        </label>
 
-                            <select
-                                value={form.categoryId}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        categoryId: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded-2xl border border-[#dce6dc] bg-[#f9fbf8] p-4 outline-none transition focus:border-[#7dbb43]"
-                            >
-                                <option value="">Pilih kategori herbal</option>
-
-                                {categories.map((category) => (
-                                    <option
-                                        key={category.id}
-                                        value={category.id}
-                                    >
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* IMAGE */}
-                        <div className="rounded-[28px] border border-dashed border-[#cfe0c9] bg-[#f9fbf8] p-6">
-                            <div className="mb-5 flex items-center gap-3">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef6ec]">
-                                    <FiImage className="text-2xl text-[#4d8b5e]" />
+                                        <input
+                                            id="article-latin"
+                                            type="text"
+                                            placeholder="Masukkan nama latin"
+                                            value={form.latinName}
+                                            onChange={(e) =>
+                                                setForm({
+                                                    ...form,
+                                                    latinName: e.target.value,
+                                                })
+                                            }
+                                            className={inputClass}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <h3 className="font-bold text-[#1f4d2e]">
-                                        Upload Gambar
-                                    </h3>
+                                    <label
+                                        htmlFor="article-category"
+                                        className={labelClass}
+                                    >
+                                        Kategori Herbal
+                                    </label>
 
-                                    <p className="text-sm text-[#5f6f61]">
-                                        Upload gambar utama artikel herbal
-                                    </p>
-                                </div>
-                            </div>
-
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-
-                                    if (!file) return;
-
-                                    const url = await uploadFile(file);
-
-                                    setForm({
-                                        ...form,
-                                        image: url,
-                                    });
-                                }}
-                            />
-
-                            {uploading && (
-                                <p className="mt-4 text-sm text-[#5f6f61]">
-                                    Uploading...
-                                </p>
-                            )}
-
-                            {form.image && (
-                                <Image
-                                    src={form.image}
-                                    alt="Preview"
-                                    width={1280}
-                                    height={720}
-                                    sizes="(max-width:768px) 100vw, 50vw"
-                                    className="mt-6 h-72 w-full rounded-3xl object-cover"
-                                />
-                            )}
-                        </div>
-
-                        {/* CONTENT EDITOR */}
-                        <div>
-                            <label className="mb-3 block text-sm font-bold text-[#1f4d2e]">
-                                Konten Artikel
-                            </label>
-
-                            <RichTextEditor
-                                value={form.content}
-                                onChange={(html) =>
-                                    setForm({
-                                        ...form,
-                                        content: html,
-                                    })
-                                }
-                            />
-                        </div>
-
-                        {/* VIDEO */}
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                            {[1, 2].map((num) => (
-                                <div
-                                    key={num}
-                                    className="rounded-[28px] border border-dashed border-[#cfe0c9] bg-[#f9fbf8] p-6"
-                                >
-                                    <div className="mb-5 flex items-center gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef6ec]">
-                                            <FiVideo className="text-2xl text-[#4d8b5e]" />
-                                        </div>
-
-                                        <div>
-                                            <h3 className="font-bold text-[#1f4d2e]">
-                                                Upload Video {num}
-                                            </h3>
-
-                                            <p className="text-sm text-[#5f6f61]">
-                                                Video edukasi herbal
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <input
-                                        type="file"
-                                        accept="video/*"
-                                        onChange={async (e) => {
-                                            const file = e.target.files?.[0];
-
-                                            if (!file) return;
-
-                                            const url = await uploadFile(file);
-
+                                    <select
+                                        id="article-category"
+                                        value={form.categoryId}
+                                        onChange={(e) =>
                                             setForm({
                                                 ...form,
-                                                [num === 1
-                                                    ? "video1"
-                                                    : "video2"]: url,
-                                            });
-                                        }}
-                                    />
+                                                categoryId: e.target.value,
+                                            })
+                                        }
+                                        className={inputClass}
+                                    >
+                                        <option value="">
+                                            Pilih kategori herbal
+                                        </option>
 
-                                    {(num === 1
-                                        ? form.video1
-                                        : form.video2) && (
-                                        <video
-                                            controls
-                                            className="mt-5 w-full rounded-2xl"
-                                        >
-                                            <source
-                                                src={
-                                                    num === 1
-                                                        ? form.video1
-                                                        : form.video2
-                                                }
-                                            />
-                                        </video>
-                                    )}
+                                        {categories.map((category) => (
+                                            <option
+                                                key={category.id}
+                                                value={category.id}
+                                            >
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        </section>
 
-                        {/* ACTION */}
-                        <div className="flex flex-col gap-4 border-t border-[#e5ece4] pt-8 sm:flex-row">
+                        {/* 2. MEDIA */}
+                        <section className="border-b border-[#e5ece4] pb-8">
+                            <div className="mb-5">
+                                <h2 className="text-base font-bold text-[#1f4d2e]">
+                                    2. Media
+                                </h2>
+
+                                <p className="mt-1 text-sm text-[#5f6f61]">
+                                    Gambar sampul wajib, video bersifat
+                                    opsional.
+                                </p>
+                            </div>
+
+                            <div className="space-y-5">
+                                <MediaField
+                                    kind="image"
+                                    title="Gambar Sampul"
+                                    hint="Upload gambar utama artikel herbal"
+                                    emptyText="Belum ada gambar"
+                                    icon={<FiImage size={18} />}
+                                    accept="image/*"
+                                    src={form.image}
+                                    uploading={uploadingField === "image"}
+                                    disabled={uploadingField !== null}
+                                    onFile={async (file) => {
+                                        const url = await uploadFile(
+                                            file,
+                                            "image",
+                                        );
+
+                                        setForm({
+                                            ...form,
+                                            image: url,
+                                        });
+                                    }}
+                                />
+
+                                <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
+                                    {[1, 2].map((num) => (
+                                        <MediaField
+                                            key={num}
+                                            kind="video"
+                                            title={`Video ${num}`}
+                                            hint="Video edukasi herbal"
+                                            emptyText="Belum ada video"
+                                            icon={<FiVideo size={18} />}
+                                            accept="video/*"
+                                            src={
+                                                num === 1
+                                                    ? form.video1
+                                                    : form.video2
+                                            }
+                                            uploading={
+                                                uploadingField ===
+                                                (num === 1
+                                                    ? "video1"
+                                                    : "video2")
+                                            }
+                                            disabled={uploadingField !== null}
+                                            onFile={async (file) => {
+                                                const url =
+                                                    await uploadFile(
+                                                        file,
+                                                        num === 1
+                                                            ? "video1"
+                                                            : "video2",
+                                                    );
+
+                                                setForm({
+                                                    ...form,
+                                                    [num === 1
+                                                        ? "video1"
+                                                        : "video2"]: url,
+                                                });
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 3. KONTEN ARTIKEL */}
+                        <section>
+                            <div className="mb-5">
+                                <h2 className="text-base font-bold text-[#1f4d2e]">
+                                    3. Konten Artikel
+                                </h2>
+
+                                <p className="mt-1 text-sm text-[#5f6f61]">
+                                    Tulis isi artikel lengkap dengan judul,
+                                    daftar, dan tautan.
+                                </p>
+                            </div>
+
+                            <div>
+                                <span className={labelClass}>
+                                    Konten Artikel
+                                </span>
+
+                                <RichTextEditor
+                                    value={form.content}
+                                    onChange={(html) =>
+                                        setForm({
+                                            ...form,
+                                            content: html,
+                                        })
+                                    }
+                                />
+                            </div>
+                        </section>
+
+                        {/* AKSI */}
+                        <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-[#e5ece4] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-8px_24px_rgba(0,0,0,0.05)] sm:static sm:mx-0 sm:shadow-none sm:px-0 sm:pb-0">
                             <LoadingButton
                                 type="submit"
                                 loading={loading}
                                 loadingText="Menyimpan..."
-                                className="flex-1 rounded-2xl bg-gradient-to-r from-[#1f4d2e] to-[#2f6b3f] px-8 py-5 text-lg font-bold text-white shadow-lg transition hover:scale-[1.01]"
+                                className="cursor-pointer rounded-xl bg-gradient-to-r from-[#1f4d2e] to-[#2f6b3f] px-6 py-3.5 text-base font-bold text-white shadow-md transition hover:brightness-110 sm:flex-[2]"
                             >
                                 Tambah Artikel
                             </LoadingButton>
 
                             <Link
                                 href="/dashboard/articles"
-                                className="flex items-center justify-center rounded-2xl border border-[#dce6dc] bg-white px-8 py-5 text-lg font-semibold text-[#5f6f61] transition hover:border-[#7dbb43] hover:text-[#1f4d2e]"
+                                className="flex cursor-pointer items-center justify-center rounded-xl border border-[#dce6dc] bg-white px-6 py-3.5 text-base font-semibold text-[#5f6f61] transition hover:border-[#7dbb43] hover:text-[#1f4d2e] sm:flex-1"
                             >
                                 Batal
                             </Link>

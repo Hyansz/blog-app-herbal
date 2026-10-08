@@ -61,8 +61,8 @@ function ToolbarButton({
             onClick={onClick}
             className={
                 active
-                    ? "flex h-9 w-9 items-center justify-center rounded-lg bg-[#7dbb43] text-white"
-                    : "flex h-9 w-9 items-center justify-center rounded-lg text-[#4d8b5e] transition hover:bg-[#eef6ec] hover:text-[#1f4d2e]"
+                    ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#7dbb43] text-white"
+                    : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#4d8b5e] transition hover:bg-[#eef6ec] hover:text-[#1f4d2e]"
             }
         >
             {children}
@@ -120,7 +120,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
         editorProps: {
             attributes: {
-                class: "min-h-96 max-h-[70vh] overflow-y-auto px-6 py-5 text-[17px] leading-relaxed text-[#425445] outline-none",
+                class: "min-h-72 sm:min-h-96 p-4 text-base leading-relaxed text-[#425445] outline-none",
             },
         },
 
@@ -238,8 +238,10 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
     return (
         <div className="overflow-hidden rounded-2xl border border-[#dce6dc] bg-white focus-within:border-[#7dbb43]">
-            {/* TOOLBAR */}
-            <div className="flex flex-wrap items-center gap-0.5 border-b border-[#dce6dc] bg-[#f9fbf8] px-3 py-2">
+            {/* SCROLL CONTAINER */}
+            <div className="max-h-[70vh] overflow-y-auto">
+                {/* TOOLBAR */}
+                <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-[#dce6dc] bg-[#f9fbf8] px-2 py-2 sm:px-3">
                 <ToolbarButton
                     label="Tebal"
                     active={active?.bold}
@@ -449,8 +451,9 @@ export default function RichTextEditor({ value, onChange }: Props) {
                 </ToolbarButton>
             </div>
 
-            {/* AREA TULIS */}
-            <EditorContent editor={editor} />
+                {/* AREA TULIS */}
+                <EditorContent editor={editor} />
+            </div>
         </div>
     );
 }
