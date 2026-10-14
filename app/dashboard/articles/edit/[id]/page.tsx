@@ -11,6 +11,7 @@ import DashboardHeader from "@/app/components/DashboardHeader";
 import LoadingButton from "@/app/components/LoadingButton";
 import MediaField from "@/app/components/MediaField";
 import RichTextEditor from "@/app/components/RichTextEditor";
+import { uploadToCloudinary } from "@/lib/upload";
 
 type UploadField = "image" | "video1" | "video2";
 
@@ -118,21 +119,20 @@ export default function EditArticlePage() {
     }, [params.id]);
 
     async function uploadFile(file: File, field: UploadField) {
-        const formData = new FormData();
-
-        formData.append("file", file);
-
         setUploadingField(field);
 
         try {
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
+            const url = await uploadToCloudinary(file);
 
-            const data = await res.json();
-
-            return data.url;
+            /* Pakai updater fungsional agar isian yang diketik
+               selama upload tidak ikut tertimpa. */
+            setForm((prev) => ({ ...prev, [field]: url }));
+        } catch (error) {
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Upload gagal. Coba lagi.",
+            );
         } finally {
             setUploadingField(null);
         }
@@ -388,17 +388,9 @@ export default function EditArticlePage() {
                                     src={form.image}
                                     uploading={uploadingField === "image"}
                                     disabled={uploadingField !== null}
-                                    onFile={async (file) => {
-                                        const url = await uploadFile(
-                                            file,
-                                            "image",
-                                        );
-
-                                        setForm({
-                                            ...form,
-                                            image: url,
-                                        });
-                                    }}
+                                    onFile={(file) =>
+                                        uploadFile(file, "image")
+                                    }
                                 />
 
                                 <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
@@ -423,22 +415,14 @@ export default function EditArticlePage() {
                                                     : "video2")
                                             }
                                             disabled={uploadingField !== null}
-                                            onFile={async (file) => {
-                                                const url =
-                                                    await uploadFile(
-                                                        file,
-                                                        num === 1
-                                                            ? "video1"
-                                                            : "video2",
-                                                    );
-
-                                                setForm({
-                                                    ...form,
-                                                    [num === 1
+                                            onFile={(file) =>
+                                                uploadFile(
+                                                    file,
+                                                    num === 1
                                                         ? "video1"
-                                                        : "video2"]: url,
-                                                });
-                                            }}
+                                                        : "video2",
+                                                )
+                                            }
                                         />
                                     ))}
                                 </div>

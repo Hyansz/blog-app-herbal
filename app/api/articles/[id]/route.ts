@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaErrorCode } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import slugify from "slugify";
@@ -13,16 +13,6 @@ interface Props {
     params: Promise<{
         id: string;
     }>;
-}
-
-/* Prisma P2025 = operasi gagal karena record yang dibutuhkan
-   tidak ditemukan. Dipetakan ke 404, bukan 500. */
-function isRecordMissing(error: unknown): boolean {
-    return (
-        typeof error === "object" &&
-        error !== null &&
-        (error as { code?: string }).code === "P2025"
-    );
 }
 
 // GET DETAIL ARTICLE
@@ -90,7 +80,7 @@ export async function PUT(req: Request, { params }: Props) {
         if (!user) {
             return NextResponse.json(
                 {
-                    message: "Unauthorized",
+                    message: "Silakan login terlebih dahulu",
                 },
                 {
                     status: 401,
@@ -101,7 +91,7 @@ export async function PUT(req: Request, { params }: Props) {
         if (user.role !== "ADMIN") {
             return NextResponse.json(
                 {
-                    message: "Forbidden",
+                    message: "Hanya admin yang boleh mengubah artikel",
                 },
                 {
                     status: 403,
@@ -131,7 +121,58 @@ export async function PUT(req: Request, { params }: Props) {
             );
         }
 
-        const body = await req.json();
+        const body = await req.json().catch(() => null);
+
+        if (!body || typeof body !== "object") {
+            return NextResponse.json(
+                {
+                    message: "Data artikel tidak valid",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const name = typeof body.name === "string" ? body.name.trim() : "";
+
+        if (!name) {
+            return NextResponse.json(
+                {
+                    message: "Nama artikel wajib diisi",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const image = typeof body.image === "string" ? body.image.trim() : "";
+
+        if (!image) {
+            return NextResponse.json(
+                {
+                    message: "Gambar sampul wajib diunggah",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const categoryId =
+            typeof body.categoryId === "string" ? body.categoryId.trim() : "";
+
+        if (!categoryId) {
+            return NextResponse.json(
+                {
+                    message: "Kategori wajib dipilih",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
 
         /* HTML dari client tidak pernah disimpan apa adanya:
            selalu lewat sanitasi allowlist di server. */
@@ -166,7 +207,7 @@ export async function PUT(req: Request, { params }: Props) {
             );
         }
 
-        const slug = slugify(body.name, {
+        const slug = slugify(name, {
             lower: true,
             strict: true,
         });
@@ -176,11 +217,12 @@ export async function PUT(req: Request, { params }: Props) {
                 id,
             },
             data: {
-                name: body.name,
+                name,
                 slug,
 
-                latinName: body.latinName,
-                image: body.image,
+                latinName:
+                    typeof body.latinName === "string" ? body.latinName : null,
+                image,
 
                 /* description diisi otomatis dari teks polos konten;
                    description kiriman client diabaikan. */
@@ -188,18 +230,27 @@ export async function PUT(req: Request, { params }: Props) {
                 benefits: "",
                 content,
 
-                video1: body.video1 || null,
-                video2: body.video2 || null,
+                video1:
+                    typeof body.video1 === "string" && body.video1
+                        ? body.video1
+                        : null,
+                video2:
+                    typeof body.video2 === "string" && body.video2
+                        ? body.video2
+                        : null,
 
-                categoryId: body.categoryId,
+                categoryId,
             },
         });
 
         return NextResponse.json(article);
     } catch (error) {
-        /* P2025 = "An operation failed because it depends on one or
-           more records that were required but not found" -> 404. */
-        if (isRecordMissing(error)) {
+        /* P2025 = artikel hilang saat update -> 404.
+           P2002 = slug (judul) duplikat -> 409.
+           P2003 = kategori tidak ada -> 400. */
+        const code = prismaErrorCode(error);
+
+        if (code === "P2025") {
             return NextResponse.json(
                 {
                     message: "Artikel tidak ditemukan",
@@ -210,11 +261,32 @@ export async function PUT(req: Request, { params }: Props) {
             );
         }
 
-        console.error(error);
+        if (code === "P2002") {
+            return NextResponse.json(
+                {
+                    message:
+                        "Judul artikel sudah dipakai. Gunakan judul lain.",
+                },
+                {
+                    status: 409,
+                },
+            );
+        }
+
+        if (code === "P2003") {
+            return NextResponse.json(
+                {
+                    message: "Kategori tidak ditemukan",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
 
         return NextResponse.json(
             {
-                message: "Gagal update artikel",
+                message: "Gagal update artikel. Coba lagi.",
             },
             {
                 status: 500,
@@ -231,7 +303,7 @@ export async function DELETE(req: Request, { params }: Props) {
         if (!user) {
             return NextResponse.json(
                 {
-                    message: "Unauthorized",
+                    message: "Silakan login terlebih dahulu",
                 },
                 {
                     status: 401,
@@ -242,7 +314,7 @@ export async function DELETE(req: Request, { params }: Props) {
         if (user.role !== "ADMIN") {
             return NextResponse.json(
                 {
-                    message: "Forbidden",
+                    message: "Hanya admin yang boleh menghapus artikel",
                 },
                 {
                     status: 403,
@@ -282,7 +354,7 @@ export async function DELETE(req: Request, { params }: Props) {
             message: "Artikel berhasil dihapus",
         });
     } catch (error) {
-        if (isRecordMissing(error)) {
+        if (prismaErrorCode(error) === "P2025") {
             return NextResponse.json(
                 {
                     message: "Artikel tidak ditemukan",
@@ -293,11 +365,9 @@ export async function DELETE(req: Request, { params }: Props) {
             );
         }
 
-        console.error(error);
-
         return NextResponse.json(
             {
-                message: "Gagal menghapus artikel",
+                message: "Gagal menghapus artikel. Coba lagi.",
             },
             {
                 status: 500,

@@ -29,6 +29,8 @@ import {
     Undo2,
 } from "lucide-react";
 
+import { uploadToCloudinary } from "@/lib/upload";
+
 interface Props {
     value: string;
     onChange: (html: string) => void;
@@ -205,29 +207,17 @@ export default function RichTextEditor({ value, onChange }: Props) {
             setUploading(true);
 
             try {
-                const formData = new FormData();
+                /* Mekanisme yang sama dengan gambar sampul:
+                   tanda tangan dari server, unggah langsung dari browser. */
+                const url = await uploadToCloudinary(file);
 
-                formData.append("file", file);
-
-                /* /api/upload sudah ADMIN-only. */
-                const res = await fetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                });
-
-                const data = await res.json();
-
-                if (data.url) {
-                    editor
-                        .chain()
-                        .focus()
-                        .setImage({ src: data.url, alt: "" })
-                        .run();
-                } else {
-                    alert(data.message || "Upload gagal");
-                }
-            } catch {
-                alert("Upload gagal");
+                editor.chain().focus().setImage({ src: url, alt: "" }).run();
+            } catch (error) {
+                alert(
+                    error instanceof Error
+                        ? error.message
+                        : "Upload gagal. Coba lagi.",
+                );
             } finally {
                 setUploading(false);
             }

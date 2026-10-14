@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaErrorCode } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import slugify from "slugify";
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         if (!user) {
             return NextResponse.json(
                 {
-                    message: "Unauthorized",
+                    message: "Silakan login terlebih dahulu",
                 },
                 {
                     status: 401,
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
         if (user.role !== "ADMIN") {
             return NextResponse.json(
                 {
-                    message: "Forbidden",
+                    message: "Hanya admin yang boleh menambah artikel",
                 },
                 {
                     status: 403,
@@ -35,7 +35,58 @@ export async function POST(req: Request) {
             );
         }
 
-        const body = await req.json();
+        const body = await req.json().catch(() => null);
+
+        if (!body || typeof body !== "object") {
+            return NextResponse.json(
+                {
+                    message: "Data artikel tidak valid",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const name = typeof body.name === "string" ? body.name.trim() : "";
+
+        if (!name) {
+            return NextResponse.json(
+                {
+                    message: "Nama artikel wajib diisi",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const image = typeof body.image === "string" ? body.image.trim() : "";
+
+        if (!image) {
+            return NextResponse.json(
+                {
+                    message: "Gambar sampul wajib diunggah",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
+        const categoryId =
+            typeof body.categoryId === "string" ? body.categoryId.trim() : "";
+
+        if (!categoryId) {
+            return NextResponse.json(
+                {
+                    message: "Kategori wajib dipilih",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
 
         /* HTML dari client tidak pernah disimpan apa adanya:
            selalu lewat sanitasi allowlist di server. */
@@ -70,7 +121,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const slug = slugify(body.name, {
+        const slug = slugify(name, {
             lower: true,
             strict: true,
         });
@@ -81,25 +132,59 @@ export async function POST(req: Request) {
            description kiriman client diabaikan. */
         const article = await prisma.article.create({
             data: {
-                name: body.name,
+                name,
                 slug,
-                latinName: body.latinName,
-                image: body.image,
+                latinName:
+                    typeof body.latinName === "string" ? body.latinName : null,
+                image,
                 description: deriveDescription(plainText),
                 benefits: "",
                 content,
-                video1: body.video1 || null,
-                video2: body.video2 || null,
-                categoryId: body.categoryId,
+                video1:
+                    typeof body.video1 === "string" && body.video1
+                        ? body.video1
+                        : null,
+                video2:
+                    typeof body.video2 === "string" && body.video2
+                        ? body.video2
+                        : null,
+                categoryId,
                 authorId: user.id,
             },
         });
 
         return NextResponse.json(article);
-    } catch {
+    } catch (error) {
+        /* P2002 = slug (judul) duplikat -> 409.
+           P2003 = kategori tidak ada -> 400. */
+        const code = prismaErrorCode(error);
+
+        if (code === "P2002") {
+            return NextResponse.json(
+                {
+                    message:
+                        "Judul artikel sudah dipakai. Gunakan judul lain.",
+                },
+                {
+                    status: 409,
+                },
+            );
+        }
+
+        if (code === "P2003") {
+            return NextResponse.json(
+                {
+                    message: "Kategori tidak ditemukan",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
+
         return NextResponse.json(
             {
-                message: "Gagal membuat artikel",
+                message: "Gagal membuat artikel. Coba lagi.",
             },
             {
                 status: 500,
